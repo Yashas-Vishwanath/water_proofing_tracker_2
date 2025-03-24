@@ -64,8 +64,8 @@ const n00Tanks: Record<string, WaterTank> = {
       status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
     })),
     coordinates: {
-      top: 398,
-      left: 90,
+      top: 495,
+      left: 100,
       width: 20,
       height: 20,
     },
