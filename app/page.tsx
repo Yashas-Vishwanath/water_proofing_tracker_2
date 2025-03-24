@@ -985,14 +985,15 @@ export default function ConstructionTracker() {
 
         <div className="relative w-full">
           {activeSection === "N00" && (
-            <div className="relative">
-              <div className="relative w-full">
+            <div className="overflow-auto">
+              <div className="relative" style={{ width: "1280px", height: "900px" }}>
                 <Image
                   src="/images/N00-1.png"
                   alt="N00 Level Map"
                   width={1280}
                   height={900}
                   className="w-full h-auto"
+                  style={{ maxWidth: "none" }}
                 />
                 {/* Render clickable boxes for each tank */}
                 {Object.values(n00TanksData).map((tank) => (
@@ -1020,56 +1021,74 @@ export default function ConstructionTracker() {
           )}
 
           {activeSection === "N10" && (
-            <div className="relative">
-              <Image src="/images/N10-1.png" alt="N10 Level Map" width={1280} height={900} className="w-full h-auto" />
-              {/* Render clickable boxes for each tank */}
-              {Object.values(n10TanksData).map((tank) => (
-                <div
-                  key={tank.id}
-                  className="absolute"
-                  style={{
-                    top: `${tank.coordinates.top}px`,
-                    left: `${tank.coordinates.left}px`,
-                  }}
-                >
+            <div className="overflow-auto">
+              <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                <Image 
+                  src="/images/N10-1.png" 
+                  alt="N10 Level Map" 
+                  width={1280} 
+                  height={900} 
+                  className="w-full h-auto"
+                  style={{ maxWidth: "none" }}
+                />
+                {/* Render clickable boxes for each tank */}
+                {Object.values(n10TanksData).map((tank) => (
                   <div
-                    className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                    key={tank.id}
+                    className="absolute"
                     style={{
-                      width: `${tank.coordinates.width}px`,
-                      height: `${tank.coordinates.height}px`,
+                      top: `${tank.coordinates.top}px`,
+                      left: `${tank.coordinates.left}px`,
                     }}
-                    onClick={() => handleTankClick(tank.id)}
-                  ></div>
-                  <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                </div>
-              ))}
+                  >
+                    <div
+                      className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                      style={{
+                        width: `${tank.coordinates.width}px`,
+                        height: `${tank.coordinates.height}px`,
+                      }}
+                      onClick={() => handleTankClick(tank.id)}
+                    ></div>
+                    <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {activeSection === "N20" && (
-            <div className="relative">
-              <Image src="/images/N20-1.png" alt="N20 Level Map" width={1280} height={900} className="w-full h-auto" />
-              {/* Render clickable boxes for each tank */}
-              {Object.values(n20TanksData).map((tank) => (
-                <div
-                  key={tank.id}
-                  className="absolute"
-                  style={{
-                    top: `${tank.coordinates.top}px`,
-                    left: `${tank.coordinates.left}px`,
-                  }}
-                >
+            <div className="overflow-auto">
+              <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                <Image 
+                  src="/images/N20-1.png" 
+                  alt="N20 Level Map" 
+                  width={1280} 
+                  height={900} 
+                  className="w-full h-auto"
+                  style={{ maxWidth: "none" }}
+                />
+                {/* Render clickable boxes for each tank */}
+                {Object.values(n20TanksData).map((tank) => (
                   <div
-                    className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                    key={tank.id}
+                    className="absolute"
                     style={{
-                      width: `${tank.coordinates.width}px`,
-                      height: `${tank.coordinates.height}px`,
+                      top: `${tank.coordinates.top}px`,
+                      left: `${tank.coordinates.left}px`,
                     }}
-                    onClick={() => handleTankClick(tank.id)}
-                  ></div>
-                  <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                </div>
-              ))}
+                  >
+                    <div
+                      className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                      style={{
+                        width: `${tank.coordinates.width}px`,
+                        height: `${tank.coordinates.height}px`,
+                      }}
+                      onClick={() => handleTankClick(tank.id)}
+                    ></div>
+                    <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
