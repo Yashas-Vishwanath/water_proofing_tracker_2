@@ -9,6 +9,7 @@ A web application for tracking progress of waterproofing works on water tanks at
 - Detailed progress tracking for each waterproofing stage
 - Export data to spreadsheet functionality
 - Progress stage management with completion tracking
+- Fixed positioning for tank markers
 
 ## Technologies Used
 
