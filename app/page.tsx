@@ -5,516 +5,101 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { 
+  ProgressStage,
+  ProgressStatus,
+  StageProgress,
+  TankType,
+  WaterTank,
+  allProgressStages,
+  n00Tanks,
+  n10Tanks,
+  n20Tanks
+} from "./data/tanks"
 
-// Types for our water tank data
-type ProgressStage =
-  | "Formwork Removal"
-  | "Repair and Cleaning"
-  | "Pump Anchors"
-  | "Slope"
-  | "Inspection Stage 1"
-  | "Waterproofing"
-  | "Inspection Stage 2"
-
-type ProgressStatus = "Not Started" | "In Progress" | "Completed"
-
-type StageProgress = {
-  stage: ProgressStage
-  status: ProgressStatus
-}
-
-type TankType = "SEWAGE WATER" | "RAIN WATER" | "CHILLER ROOM"
-
-type WaterTank = {
-  id: string
-  name: string
-  location: string
-  currentStage: ProgressStage
-  progress: StageProgress[]
-  coordinates: {
-    top: number
-    left: number
-    width: number
-    height: number
+// Add this type declaration for the global XLSX object
+declare global {
+  interface Window {
+    XLSX: any
   }
-  type: TankType
-}
-
-// Define all possible progress stages in order
-const allProgressStages: ProgressStage[] = [
-  "Formwork Removal",
-  "Repair and Cleaning",
-  "Pump Anchors",
-  "Slope",
-  "Inspection Stage 1",
-  "Waterproofing",
-  "Inspection Stage 2",
-]
-
-// Update the tank data for N00 level with correct tank IDs and positions based on the new image
-const n00Tanks: Record<string, WaterTank> = {
-  "PBF-S3-03": {
-    id: "PBF-S3-03",
-    name: "SEWAGE WATER | PBF-S3-03",
-    location: "West Section",
-    currentStage: "Waterproofing",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
-    })),
-    coordinates: {
-      top: 495,
-      left: 100,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBF-S3-02": {
-    id: "PBF-S3-02",
-    name: "SEWAGE WATER | PBF-S3-02",
-    location: "Center",
-    currentStage: "Inspection Stage 1",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors", "Slope"].includes(stage)
-        ? "Completed"
-        : stage === "Inspection Stage 1"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 525,
-      left: 500,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBF-S3-01": {
-    id: "PBF-S3-01",
-    name: "SEWAGE WATER | PBF-S3-01",
-    location: "East Section",
-    currentStage: "Repair and Cleaning",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status:
-        stage === "Formwork Removal" ? "Completed" : stage === "Repair and Cleaning" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 423,
-      left: 660,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "CHILLER-ROOM-INSIDE": {
-    id: "CHILLER-ROOM-INSIDE",
-    name: "SEWAGE WATER | CHILLER ROOM INSIDE",
-    location: "Far East",
-    currentStage: "Slope",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors"].includes(stage)
-        ? "Completed"
-        : stage === "Slope"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 535,
-      left: 1000,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "GARDENTONA-SMALL": {
-    id: "GARDENTONA-SMALL",
-    name: "RAIN WATER | GARDENTONA SMALL",
-    location: "Top Center",
-    currentStage: "Waterproofing",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
-    })),
-    coordinates: {
-      top: 390,
-      left: 500,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "GARDENTONA-BIG": {
-    id: "GARDENTONA-BIG",
-    name: "RAIN WATER | GARDENTONA BIG",
-    location: "Center Right",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 450,
-      left: 576,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "CHILLER-ROOM-OUTSIDE": {
-    id: "CHILLER-ROOM-OUTSIDE",
-    name: "CHILLER ROOM OUTSIDE",
-    location: "Bottom Right",
-    currentStage: "Inspection Stage 1",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors", "Slope"].includes(stage)
-        ? "Completed"
-        : stage === "Inspection Stage 1"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 620,
-      left: 1000,
-      width: 20,
-      height: 20,
-    },
-    type: "CHILLER ROOM",
-  },
-}
-
-// Update the tank data for N10 level with correct tank IDs and positions based on the new image
-const n10Tanks: Record<string, WaterTank> = {
-  "PBF-S2-01": {
-    id: "PBF-S2-01",
-    name: "SEWAGE WATER | PBF-S2-01",
-    location: "Bottom Right",
-    currentStage: "Waterproofing",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
-    })),
-    coordinates: {
-      top: 590,
-      left: 890,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBF-S2-11": {
-    id: "PBF-S2-11",
-    name: "SEWAGE WATER | PBF-S2-11",
-    location: "Middle Left",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 240,
-      left: 310,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBF-S2-12": {
-    id: "PBF-S2-12",
-    name: "SEWAGE WATER | PBF-S2-12",
-    location: "Left",
-    currentStage: "Pump Anchors",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning"].includes(stage)
-        ? "Completed"
-        : stage === "Pump Anchors"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 320,
-      left: 270,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBF-S2-13": {
-    id: "PBF-S2-13",
-    name: "SEWAGE WATER | PBF-S2-13",
-    location: "Bottom Left",
-    currentStage: "Inspection Stage 1",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors", "Slope"].includes(stage)
-        ? "Completed"
-        : stage === "Inspection Stage 1"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 440,
-      left: 285,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-04": {
-    id: "S2-PB-04",
-    name: "SEWAGE WATER | S2-PB-04",
-    location: "Top Center",
-    currentStage: "Slope",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors"].includes(stage)
-        ? "Completed"
-        : stage === "Slope"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 85,
-      left: 535,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-05": {
-    id: "S2-PB-05",
-    name: "SEWAGE WATER | S2-PB-05",
-    location: "Top Left",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 135,
-      left: 435,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-03": {
-    id: "S2-PB-03",
-    name: "SEWAGE WATER | S2-PB-03",
-    location: "Top Right",
-    currentStage: "Repair and Cleaning",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status:
-        stage === "Formwork Removal" ? "Completed" : stage === "Repair and Cleaning" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 130,
-      left: 745,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-06": {
-    id: "S2-PB-06",
-    name: "SEWAGE WATER | S2-PB-06",
-    location: "Bottom Center",
-    currentStage: "Waterproofing",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
-    })),
-    coordinates: {
-      top: 585,
-      left: 485,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-07": {
-    id: "S2-PB-07",
-    name: "SEWAGE WATER | S2-PB-07",
-    location: "Bottom Center-Right",
-    currentStage: "Repair and Cleaning",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status:
-        stage === "Formwork Removal" ? "Completed" : stage === "Repair and Cleaning" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 645,
-      left: 810,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "PBP-S2-01": {
-    id: "PBP-S2-01",
-    name: "SEWAGE WATER | PBP-S2-01",
-    location: "Bottom Center",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 745,
-      left: 670,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-  "S2-PB-15": {
-    id: "S2-PB-15",
-    name: "SEWAGE WATER | S2-PB-15",
-    location: "Bottom Center",
-    currentStage: "Inspection Stage 1",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors", "Slope"].includes(stage)
-        ? "Completed"
-        : stage === "Inspection Stage 1"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 790,
-      left: 670,
-      width: 20,
-      height: 20,
-    },
-    type: "SEWAGE WATER",
-  },
-}
-
-// Update the tank data for N20 level with correct tank IDs and positions based on the new image
-const n20Tanks: Record<string, WaterTank> = {
-  "PBF-S1-05": {
-    id: "PBF-S1-05",
-    name: "RAIN WATER | PBF-S1-05",
-    location: "Top Left",
-    currentStage: "Inspection Stage 1",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors", "Slope"].includes(stage)
-        ? "Completed"
-        : stage === "Inspection Stage 1"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 140,
-      left: 520,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "PBF-S1-04": {
-    id: "PBF-S1-04",
-    name: "RAIN WATER | PBF-S1-04",
-    location: "Top Right",
-    currentStage: "Slope",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: ["Formwork Removal", "Repair and Cleaning", "Pump Anchors"].includes(stage)
-        ? "Completed"
-        : stage === "Slope"
-          ? "In Progress"
-          : "Not Started",
-    })),
-    coordinates: {
-      top: 140,
-      left: 740,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "PBF-S1-03": {
-    id: "PBF-S1-03",
-    name: "RAIN WATER | PBF-S1-03",
-    location: "Middle Left",
-    currentStage: "Waterproofing",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Inspection Stage 2" ? "Not Started" : stage === "Waterproofing" ? "In Progress" : "Completed",
-    })),
-    coordinates: {
-      top: 440,
-      left: 180,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "PBF-S1-02": {
-    id: "PBF-S1-02",
-    name: "RAIN WATER | PBF-S1-02",
-    location: "Bottom Left",
-    currentStage: "Repair and Cleaning",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status:
-        stage === "Formwork Removal" ? "Completed" : stage === "Repair and Cleaning" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 600,
-      left: 180,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
-  "PBF-S1-08": {
-    id: "PBF-S1-08",
-    name: "RAIN WATER | PBF-S1-08",
-    location: "Bottom Right",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-    })),
-    coordinates: {
-      top: 640,
-      left: 1120,
-      width: 20,
-      height: 20,
-    },
-    type: "RAIN WATER",
-  },
 }
 
 export default function ConstructionTracker() {
   // State for active section and tank
-  const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<string | null>("N00")
   const [selectedTank, setSelectedTank] = useState<WaterTank | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isWaterTanksOpen, setIsWaterTanksOpen] = useState(false)
   const [isMechanicalPitsOpen, setIsMechanicalPitsOpen] = useState(false)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [stageToUndo, setStageToUndo] = useState<ProgressStage | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // State for tanks data
-  const [n00TanksData, setN00TanksData] = useState(n00Tanks)
-  const [n10TanksData, setN10TanksData] = useState(n10Tanks)
-  const [n20TanksData, setN20TanksData] = useState(n20Tanks)
+  const [n00TanksData, setN00TanksData] = useState<Record<string, WaterTank>>(n00Tanks)
+  const [n10TanksData, setN10TanksData] = useState<Record<string, WaterTank>>(n10Tanks)
+  const [n20TanksData, setN20TanksData] = useState<Record<string, WaterTank>>(n20Tanks)
+  const [initializing, setInitializing] = useState(false)
 
   // Add a new state for the inspection dialog
   const [isInspectionDialogOpen, setIsInspectionDialogOpen] = useState(false)
 
   // Add a new state for the spreadsheet dialog
   const [isSpreadsheetDialogOpen, setIsSpreadsheetDialogOpen] = useState(false)
+
+  // Load tank data from the API when the component mounts
+  useEffect(() => {
+    async function fetchTasksData() {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/tasks')
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Update state with data from API
+          if (data.n00Tanks && Object.keys(data.n00Tanks).length > 0) setN00TanksData(data.n00Tanks)
+          if (data.n10Tanks && Object.keys(data.n10Tanks).length > 0) setN10TanksData(data.n10Tanks)
+          if (data.n20Tanks && Object.keys(data.n20Tanks).length > 0) setN20TanksData(data.n20Tanks)
+        } else {
+          console.log("API returned non-OK status, initializing with default data")
+          // If API fails, initialize with default data and save it to the API
+          setInitializing(true)
+          await saveTanksData()
+          setInitializing(false)
+        }
+      } catch (error) {
+        console.error("Error fetching tasks data:", error)
+        // On error, initialize with default data and save it to the API
+        setInitializing(true)
+        await saveTanksData()
+        setInitializing(false)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTasksData()
+  }, [])
+
+  // Function to save all tanks data to the API
+  const saveTanksData = async () => {
+    try {
+      const tasksData = {
+        n00Tanks: n00TanksData,
+        n10Tanks: n10TanksData,
+        n20Tanks: n20TanksData
+      }
+
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tasksData)
+      })
+    } catch (error) {
+      console.error("Error saving tasks data:", error)
+    }
+  }
 
   // Function to get tank color based on status
   const getTankColor = (tank: WaterTank) => {
@@ -677,7 +262,7 @@ export default function ConstructionTracker() {
     return csvContent
   }
 
-  const downloadCsvFile = (csvContent) => {
+  const downloadCsvFile = (csvContent: string) => {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
@@ -687,13 +272,6 @@ export default function ConstructionTracker() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-  }
-
-  // Add this type declaration for the global XLSX object
-  declare global {
-    interface Window {
-      XLSX: any
-    }
   }
 
   // Update the handleReadyForInspection function to open the dialog
@@ -842,8 +420,15 @@ export default function ConstructionTracker() {
     setStageToUndo(null)
   }
 
-  // Function to update tank data in the appropriate state
-  const updateTankData = (updatedTank: WaterTank) => {
+  // Function to update tank data in the appropriate state and API
+  const updateTankData = async (updatedTank: WaterTank) => {
+    // First update local state
+    const levelKey = activeSection === "N00" ? "n00Tanks" : 
+                    activeSection === "N10" ? "n10Tanks" : 
+                    activeSection === "N20" ? "n20Tanks" : null;
+    
+    if (!levelKey) return;
+    
     if (activeSection === "N00") {
       setN00TanksData((prev) => ({
         ...prev,
@@ -859,6 +444,18 @@ export default function ConstructionTracker() {
         ...prev,
         [updatedTank.id]: updatedTank,
       }))
+    }
+
+    // Then update via API
+    try {
+      const apiLevel = levelKey;
+      await fetch(`/api/tasks/${apiLevel}/${updatedTank.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedTank })
+      });
+    } catch (error) {
+      console.error("Error updating tank via API:", error);
     }
   }
 
@@ -882,6 +479,14 @@ export default function ConstructionTracker() {
             </div>
           </div>
           <div className="flex-1 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-black bg-gray-200 border-gray-300 hover:bg-gray-300 mr-2"
+              onClick={() => window.location.href = '/api-test'}
+            >
+              API Test
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -983,121 +588,130 @@ export default function ConstructionTracker() {
           </Button>
         </div>
 
-        <div className="relative w-full">
-          {activeSection === "N00" && (
-            <div className="overflow-auto">
-              <div className="relative" style={{ width: "1280px", height: "900px" }}>
-                <Image
-                  src="/images/N00-1.png"
-                  alt="N00 Level Map"
-                  width={1280}
-                  height={900}
-                  className="w-full h-auto"
-                  style={{ maxWidth: "none" }}
-                />
-                {/* Render clickable boxes for each tank */}
-                {Object.values(n00TanksData).map((tank) => (
-                  <div
-                    key={tank.id}
-                    className="absolute"
-                    style={{
-                      top: `${tank.coordinates.top}px`,
-                      left: `${tank.coordinates.left}px`,
-                    }}
-                  >
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[600px]">
+            <div className="text-center">
+              <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+              <p className="mt-4 text-lg">{initializing ? "Initializing tank data..." : "Loading tank data..."}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="relative w-full">
+            {activeSection === "N00" && (
+              <div className="overflow-auto">
+                <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                  <Image
+                    src="/images/N00-1.png"
+                    alt="N00 Level Map"
+                    width={1280}
+                    height={900}
+                    className="w-full h-auto"
+                    style={{ maxWidth: "none" }}
+                  />
+                  {/* Render clickable boxes for each tank */}
+                  {Object.values(n00TanksData).map((tank) => (
                     <div
-                      className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                      key={tank.id}
+                      className="absolute"
                       style={{
-                        width: `${tank.coordinates.width}px`,
-                        height: `${tank.coordinates.height}px`,
+                        top: `${tank.coordinates.top}px`,
+                        left: `${tank.coordinates.left}px`,
                       }}
-                      onClick={() => handleTankClick(tank.id)}
-                    ></div>
-                    <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                  </div>
-                ))}
+                    >
+                      <div
+                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        style={{
+                          width: `${tank.coordinates.width}px`,
+                          height: `${tank.coordinates.height}px`,
+                        }}
+                        onClick={() => handleTankClick(tank.id)}
+                      ></div>
+                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeSection === "N10" && (
-            <div className="overflow-auto">
-              <div className="relative" style={{ width: "1280px", height: "900px" }}>
-                <Image 
-                  src="/images/N10-1.png" 
-                  alt="N10 Level Map" 
-                  width={1280} 
-                  height={900} 
-                  className="w-full h-auto"
-                  style={{ maxWidth: "none" }}
-                />
-                {/* Render clickable boxes for each tank */}
-                {Object.values(n10TanksData).map((tank) => (
-                  <div
-                    key={tank.id}
-                    className="absolute"
-                    style={{
-                      top: `${tank.coordinates.top}px`,
-                      left: `${tank.coordinates.left}px`,
-                    }}
-                  >
+            {activeSection === "N10" && (
+              <div className="overflow-auto">
+                <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                  <Image 
+                    src="/images/N10-1.png" 
+                    alt="N10 Level Map" 
+                    width={1280} 
+                    height={900} 
+                    className="w-full h-auto"
+                    style={{ maxWidth: "none" }}
+                  />
+                  {/* Render clickable boxes for each tank */}
+                  {Object.values(n10TanksData).map((tank) => (
                     <div
-                      className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                      key={tank.id}
+                      className="absolute"
                       style={{
-                        width: `${tank.coordinates.width}px`,
-                        height: `${tank.coordinates.height}px`,
+                        top: `${tank.coordinates.top}px`,
+                        left: `${tank.coordinates.left}px`,
                       }}
-                      onClick={() => handleTankClick(tank.id)}
-                    ></div>
-                    <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                  </div>
-                ))}
+                    >
+                      <div
+                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        style={{
+                          width: `${tank.coordinates.width}px`,
+                          height: `${tank.coordinates.height}px`,
+                        }}
+                        onClick={() => handleTankClick(tank.id)}
+                      ></div>
+                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeSection === "N20" && (
-            <div className="overflow-auto">
-              <div className="relative" style={{ width: "1280px", height: "900px" }}>
-                <Image 
-                  src="/images/N20-1.png" 
-                  alt="N20 Level Map" 
-                  width={1280} 
-                  height={900} 
-                  className="w-full h-auto"
-                  style={{ maxWidth: "none" }}
-                />
-                {/* Render clickable boxes for each tank */}
-                {Object.values(n20TanksData).map((tank) => (
-                  <div
-                    key={tank.id}
-                    className="absolute"
-                    style={{
-                      top: `${tank.coordinates.top}px`,
-                      left: `${tank.coordinates.left}px`,
-                    }}
-                  >
+            {activeSection === "N20" && (
+              <div className="overflow-auto">
+                <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                  <Image 
+                    src="/images/N20-1.png" 
+                    alt="N20 Level Map" 
+                    width={1280} 
+                    height={900} 
+                    className="w-full h-auto"
+                    style={{ maxWidth: "none" }}
+                  />
+                  {/* Render clickable boxes for each tank */}
+                  {Object.values(n20TanksData).map((tank) => (
                     <div
-                      className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                      key={tank.id}
+                      className="absolute"
                       style={{
-                        width: `${tank.coordinates.width}px`,
-                        height: `${tank.coordinates.height}px`,
+                        top: `${tank.coordinates.top}px`,
+                        left: `${tank.coordinates.left}px`,
                       }}
-                      onClick={() => handleTankClick(tank.id)}
-                    ></div>
-                    <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                  </div>
-                ))}
+                    >
+                      <div
+                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        style={{
+                          width: `${tank.coordinates.width}px`,
+                          height: `${tank.coordinates.height}px`,
+                        }}
+                        onClick={() => handleTankClick(tank.id)}
+                      ></div>
+                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!activeSection && (
-            <div className="flex items-center justify-center h-96 bg-gray-200 rounded-lg">
-              <p className="text-gray-500 text-lg">Select a level (N00, N10, N20, N30) to view the map</p>
-            </div>
-          )}
-        </div>
+            {!activeSection && (
+              <div className="flex items-center justify-center h-96 bg-gray-200 rounded-lg">
+                <p className="text-gray-500 text-lg">Select a level (N00, N10, N20, N30) to view the map</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Tank Details Dialog */}
@@ -1127,6 +741,42 @@ export default function ConstructionTracker() {
                 </div>
               )
             })}
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDetailsOpen(false)}
+              className="mr-2"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={async () => {
+                if (selectedTank) {
+                  // Get the level key based on active section
+                  const levelKey = activeSection === "N00" ? "n00Tanks" : 
+                                 activeSection === "N10" ? "n10Tanks" : 
+                                 activeSection === "N20" ? "n20Tanks" : null;
+                  
+                  if (levelKey) {
+                    try {
+                      // Save changes via API
+                      await fetch(`/api/tasks/${levelKey}/${selectedTank.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ updatedTank: selectedTank })
+                      });
+                    } catch (error) {
+                      console.error("Error saving tank data:", error);
+                    }
+                  }
+                  
+                  setIsDetailsOpen(false);
+                }
+              }}
+            >
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

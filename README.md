@@ -11,6 +11,18 @@ A web application for tracking progress of waterproofing works on water tanks at
 - Progress stage management with completion tracking
 - Fixed positioning for tank markers
 
+## API Endpoints
+
+The application uses serverless API endpoints for data persistence:
+
+- `/api/hello` - Test endpoint to verify API functionality
+- `/api/tasks` - Main endpoint for managing all tank data
+  - `GET` - Retrieves all tank data
+  - `POST` - Updates or initializes all tank data
+- `/api/tasks/[level]/[tankId]` - Endpoint for managing individual tanks
+  - `GET` - Retrieves a specific tank's data
+  - `PUT` - Updates a specific tank's data
+
 ## Technologies Used
 
 - Next.js
@@ -59,4 +71,35 @@ This project is proprietary and not licensed for public use.
 
 ## Contact
 
-For questions or support, please contact the project maintainer. 
+For questions or support, please contact the project maintainer.
+
+## Setting Up Vercel KV for Production
+
+For production deployments, the application is designed to use Vercel KV for data persistence. This ensures proper data storage in the serverless environment.
+
+To set this up:
+
+1. Install the Vercel KV package:
+   ```bash
+   npm install @vercel/kv
+   ```
+
+2. Create a Vercel KV database:
+   - Go to your Vercel dashboard
+   - Navigate to Storage > KV
+   - Click "Create Database"
+   - Follow the setup instructions
+   - Connect the KV database to your project
+
+3. Update the KV configuration:
+   - In `app/lib/vercel-kv.ts`, uncomment the `@vercel/kv` import
+   - Update the `isVercelKVAvailable` function to return `true` in production
+   - Uncomment the KV implementation in the functions
+
+4. Deploy to Vercel
+
+The application will automatically switch to using KV for data persistence in the production environment, while still using the local file system during development.
+
+## Deployment
+
+The application is deployed on Vercel. 
