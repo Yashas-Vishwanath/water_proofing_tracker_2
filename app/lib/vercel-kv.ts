@@ -1,118 +1,95 @@
-// Import the Vercel KV client
-import { kv } from '@vercel/kv';
-import { TasksData } from '../data/tanks';
+// Temporary implementation that doesn't use Vercel KV
+// We'll replace this with the actual KV integration after deployment is fixed
 
-// For local development without the actual KV, we'll use a fallback
-// to local file system for now
-import fs from 'fs';
-import path from 'path';
-import { promises as fsPromises } from 'fs';
-
-// To use this:
-// 1. Install @vercel/kv package with: npm install @vercel/kv
-// 2. Set up your KV store in Vercel dashboard and connect it to your project
-// 3. Uncomment the import and change the implementations to use KV instead of file system
-
-// Path for local fallback when KV is not available
-const localDataFilePath = path.join(process.cwd(), 'data', 'tasks.json');
-
-// Ensure the data directory exists for local development
-async function ensureLocalDataDirectoryExists() {
-  const dataDir = path.join(process.cwd(), 'data');
-  try {
-    await fsPromises.access(dataDir);
-  } catch (error) {
-    // Directory doesn't exist, create it
-    await fsPromises.mkdir(dataDir, { recursive: true });
-  }
+// Types from the API route for consistency
+export enum ProgressStatus {
+  NOT_STARTED = 'Not Started',
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed'
 }
 
-// Check if we have KV available or need to use local fallback
-function isVercelKVAvailable() {
-  // Check for Vercel KV environment variables
-  return process.env.VERCEL_ENV === 'production' || 
-         (process.env.KV_URL !== undefined && 
-          process.env.KV_REST_API_URL !== undefined && 
-          process.env.KV_REST_API_TOKEN !== undefined);
+export enum ProgressStage {
+  STAGE_1 = 'Stage 1',
+  STAGE_2 = 'Stage 2',
+  STAGE_3 = 'Stage 3',
+  STAGE_4 = 'Stage 4'
 }
+
+export enum TankType {
+  OVERHEAD = 'Overhead Tank',
+  UNDERGROUND = 'Underground Tank'
+}
+
+export type StageProgress = {
+  stage: ProgressStage;
+  status: ProgressStatus;
+};
+
+export type WaterTank = {
+  id: string;
+  name: string;
+  type: TankType;
+  location: string;
+  progress: StageProgress[];
+};
+
+export type TasksData = {
+  tanks: WaterTank[];
+  lastUpdated: string;
+};
+
+// Static sample data
+const sampleData: TasksData = {
+  tanks: [
+    {
+      id: '1',
+      name: 'Main Building Tank',
+      type: TankType.OVERHEAD,
+      location: 'Main Building',
+      progress: [
+        { stage: ProgressStage.STAGE_1, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_2, status: ProgressStatus.IN_PROGRESS },
+        { stage: ProgressStage.STAGE_3, status: ProgressStatus.NOT_STARTED },
+        { stage: ProgressStage.STAGE_4, status: ProgressStatus.NOT_STARTED }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Garden Area Tank',
+      type: TankType.UNDERGROUND,
+      location: 'Garden Area',
+      progress: [
+        { stage: ProgressStage.STAGE_1, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_2, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_3, status: ProgressStatus.IN_PROGRESS },
+        { stage: ProgressStage.STAGE_4, status: ProgressStatus.NOT_STARTED }
+      ]
+    }
+  ],
+  lastUpdated: new Date().toISOString()
+};
 
 // Get all tanks data
 export async function getTanksData(): Promise<TasksData> {
-  try {
-    if (isVercelKVAvailable()) {
-      console.log('Using Vercel KV for data storage');
-      // Use Vercel KV in production
-      const data = await kv.get<TasksData>('tanksData');
-      if (data) {
-        return data;
-      } else {
-        // If no data exists yet in KV, return empty structure
-        return { 
-          n00Tanks: {}, 
-          n10Tanks: {}, 
-          n20Tanks: {} 
-        };
-      }
-    } else {
-      console.log('Using local file system for data storage');
-      // Fallback to file system for local development
-      await ensureLocalDataDirectoryExists();
-      
-      try {
-        const data = await fsPromises.readFile(localDataFilePath, 'utf8');
-        return JSON.parse(data) as TasksData;
-      } catch (error) {
-        // If file doesn't exist or is invalid, return default data structure
-        console.log('Initializing with empty data structure');
-        return { 
-          n00Tanks: {}, 
-          n10Tanks: {}, 
-          n20Tanks: {} 
-        };
-      }
-    }
-  } catch (error) {
-    console.error('Error reading tanks data:', error);
-    throw error;
-  }
+  // Just return the sample data for now
+  return Promise.resolve(sampleData);
 }
 
 // Save all tanks data
 export async function saveTanksData(data: TasksData): Promise<boolean> {
-  try {
-    if (isVercelKVAvailable()) {
-      // Use Vercel KV in production
-      await kv.set('tanksData', data);
-      return true;
-    } else {
-      // Fallback to file system for local development
-      await ensureLocalDataDirectoryExists();
-      await fsPromises.writeFile(localDataFilePath, JSON.stringify(data, null, 2), 'utf8');
-      return true;
-    }
-  } catch (error) {
-    console.error('Error saving tanks data:', error);
-    return false;
-  }
+  // Just pretend to save and return success
+  console.log('Pretending to save data:', data);
+  return Promise.resolve(true);
 }
 
 // Get a specific tank
-export async function getTank(level: string, tankId: string) {
-  const tasksData = await getTanksData();
-  if (!tasksData[level]) return null;
-  return tasksData[level][tankId] || null;
+export async function getTank(tankId: string) {
+  const tank = sampleData.tanks.find(t => t.id === tankId);
+  return tank || null;
 }
 
 // Update a specific tank
-export async function updateTank(level: string, tankId: string, tankData: any): Promise<boolean> {
-  try {
-    const tasksData = await getTanksData();
-    if (!tasksData[level]) return false;
-    
-    tasksData[level][tankId] = tankData;
-    return await saveTanksData(tasksData);
-  } catch (error) {
-    console.error('Error updating tank:', error);
-    return false;
-  }
+export async function updateTank(tankId: string, tankData: WaterTank): Promise<boolean> {
+  console.log('Pretending to update tank:', tankId, tankData);
+  return Promise.resolve(true);
 } 

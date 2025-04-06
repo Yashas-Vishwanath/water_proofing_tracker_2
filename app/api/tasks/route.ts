@@ -1,71 +1,100 @@
 import { NextResponse } from 'next/server';
-import { TasksData } from '@/app/data/tanks';
-import { getTanksData, saveTanksData } from '@/app/lib/vercel-kv';
 
-// GET handler for tasks
-export async function GET(request: Request) {
-  try {
-    const tasksData = await getTanksData();
-    
-    // Check if we have data or need to initialize with defaults
-    const isEmpty = Object.keys(tasksData.n00Tanks).length === 0 && 
-                   Object.keys(tasksData.n10Tanks).length === 0 && 
-                   Object.keys(tasksData.n20Tanks).length === 0;
-    
-    // If we have no data, let's check for the initialization query parameter
-    if (isEmpty) {
-      const url = new URL(request.url);
-      const initialize = url.searchParams.get('initialize');
-      
-      if (initialize === 'true') {
-        // In a production app, we'd have default data to initialize with
-        // But we'll skip this for now and let the frontend handle initialization
-        return NextResponse.json(
-          { message: 'Empty data structure, please initialize from frontend' },
-          { status: 200 }
-        );
-      }
+// Types
+export enum ProgressStatus {
+  NOT_STARTED = 'Not Started',
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed'
+}
+
+export enum ProgressStage {
+  STAGE_1 = 'Stage 1',
+  STAGE_2 = 'Stage 2',
+  STAGE_3 = 'Stage 3',
+  STAGE_4 = 'Stage 4'
+}
+
+export enum TankType {
+  OVERHEAD = 'Overhead Tank',
+  UNDERGROUND = 'Underground Tank'
+}
+
+export type StageProgress = {
+  stage: ProgressStage;
+  status: ProgressStatus;
+};
+
+export type WaterTank = {
+  id: string;
+  name: string;
+  type: TankType;
+  location: string;
+  progress: StageProgress[];
+};
+
+export type TasksData = {
+  tanks: WaterTank[];
+  lastUpdated: string;
+};
+
+// Static sample data
+const sampleData: TasksData = {
+  tanks: [
+    {
+      id: '1',
+      name: 'Main Building Tank',
+      type: TankType.OVERHEAD,
+      location: 'Main Building',
+      progress: [
+        { stage: ProgressStage.STAGE_1, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_2, status: ProgressStatus.IN_PROGRESS },
+        { stage: ProgressStage.STAGE_3, status: ProgressStatus.NOT_STARTED },
+        { stage: ProgressStage.STAGE_4, status: ProgressStatus.NOT_STARTED }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Garden Area Tank',
+      type: TankType.UNDERGROUND,
+      location: 'Garden Area',
+      progress: [
+        { stage: ProgressStage.STAGE_1, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_2, status: ProgressStatus.COMPLETED },
+        { stage: ProgressStage.STAGE_3, status: ProgressStatus.IN_PROGRESS },
+        { stage: ProgressStage.STAGE_4, status: ProgressStatus.NOT_STARTED }
+      ]
     }
-    
-    return NextResponse.json(tasksData);
+  ],
+  lastUpdated: new Date().toISOString()
+};
+
+// GET handler
+export async function GET() {
+  try {
+    return NextResponse.json({ success: true, data: sampleData });
   } catch (error) {
-    console.error('Error in GET /api/tasks:', error);
+    console.error('Error fetching tasks:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve tasks data' },
+      { success: false, error: 'Failed to fetch tasks data' },
       { status: 500 }
     );
   }
 }
 
-// POST handler for updating all tasks
+// POST handler
 export async function POST(request: Request) {
   try {
-    const tasksData = await request.json() as TasksData;
-    
-    if (!tasksData || typeof tasksData !== 'object') {
-      return NextResponse.json(
-        { error: 'Invalid data format' },
-        { status: 400 }
-      );
-    }
-    
-    const success = await saveTanksData(tasksData);
-    
-    if (success) {
-      return NextResponse.json({
-        success: true,
-        message: 'Tasks data updated successfully'
-      });
-    } else {
-      return NextResponse.json(
-        { error: 'Failed to write tasks data' },
-        { status: 500 }
-      );
-    }
+    // For now, just return success with the sample data
+    // Later we'll implement actual data saving with KV
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Data received (but not saved yet)',
+      data: sampleData
+    });
   } catch (error) {
-    console.error('Error in POST /api/tasks:', error);
+    console.error('Error updating tasks:', error);
     return NextResponse.json(
-      { error: 'Failed to update tasks data', details: error instanceof Error ? error.message : String(error) },
+      { success: false, error: 'Failed to update tasks data' },
       { status: 500 }
     );
   }
