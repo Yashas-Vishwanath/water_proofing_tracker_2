@@ -1,6 +1,5 @@
 // Import the Vercel KV client
-// We're commenting out the import since we couldn't install the package yet
-// import { kv } from '@vercel/kv';
+import { kv } from '@vercel/kv';
 import { TasksData } from '../data/tanks';
 
 // For local development without the actual KV, we'll use a fallback
@@ -8,11 +7,6 @@ import { TasksData } from '../data/tanks';
 import fs from 'fs';
 import path from 'path';
 import { promises as fsPromises } from 'fs';
-
-// To use this:
-// 1. Install @vercel/kv package with: npm install @vercel/kv
-// 2. Set up your KV store in Vercel dashboard and connect it to your project
-// 3. Uncomment the import and change the implementations to use KV instead of file system
 
 // Path for local fallback when KV is not available
 const localDataFilePath = path.join(process.cwd(), 'data', 'tasks.json');
@@ -30,23 +24,32 @@ async function ensureLocalDataDirectoryExists() {
 
 // Check if we have KV available or need to use local fallback
 function isVercelKVAvailable() {
-  // When you've installed the package and configured Vercel KV,
-  // change this to check for actual KV availability
-  return false;
+  // Check for Vercel KV environment variables
+  return process.env.VERCEL_ENV === 'production' || 
+         (process.env.KV_URL !== undefined && 
+          process.env.KV_REST_API_URL !== undefined && 
+          process.env.KV_REST_API_TOKEN !== undefined);
 }
 
 // Get all tanks data
 export async function getTanksData(): Promise<TasksData> {
   try {
     if (isVercelKVAvailable()) {
-      // Uncomment when @vercel/kv is installed:
-      // return await kv.get('tanksData') as TasksData || {
-      //   n00Tanks: {},
-      //   n10Tanks: {},
-      //   n20Tanks: {}
-      // };
-      throw new Error('Vercel KV not configured yet');
+      console.log('Using Vercel KV for data storage');
+      // Use Vercel KV in production
+      const data = await kv.get<TasksData>('tanksData');
+      if (data) {
+        return data;
+      } else {
+        // If no data exists yet in KV, return empty structure
+        return { 
+          n00Tanks: {}, 
+          n10Tanks: {}, 
+          n20Tanks: {} 
+        };
+      }
     } else {
+      console.log('Using local file system for data storage');
       // Fallback to file system for local development
       await ensureLocalDataDirectoryExists();
       
@@ -73,10 +76,9 @@ export async function getTanksData(): Promise<TasksData> {
 export async function saveTanksData(data: TasksData): Promise<boolean> {
   try {
     if (isVercelKVAvailable()) {
-      // Uncomment when @vercel/kv is installed:
-      // await kv.set('tanksData', data);
-      // return true;
-      throw new Error('Vercel KV not configured yet');
+      // Use Vercel KV in production
+      await kv.set('tanksData', data);
+      return true;
     } else {
       // Fallback to file system for local development
       await ensureLocalDataDirectoryExists();
