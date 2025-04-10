@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-kv": "node scripts/init-kv.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
