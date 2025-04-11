@@ -1,0 +1,33 @@
+{
+  "tanks": [
+    {
+      "id": "1",
+      "name": "Tank 1",
+      "type": "Underground Tank",
+      "location": "Sector A",
+      "progress": [
+        {
+          "stage": "Stage 1",
+          "status": "Completed"
+        },
+        {
+          "stage": "Stage 2",
+          "status": "In Progress"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Tank 2",
+      "type": "Overhead Tank",
+      "location": "Sector B",
+      "progress": [
+        {
+          "stage": "Stage 1",
+          "status": "Completed"
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2025-04-11T18:29:12.052Z"
+}

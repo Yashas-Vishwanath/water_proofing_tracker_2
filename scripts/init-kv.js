@@ -1,35 +1,66 @@
-// Script to initialize Vercel KV with default data
-const { kv } = require('@vercel/kv');
-const { n00Tanks, n10Tanks, n20Tanks } = require('../app/data/tanks');
+// This script initializes the database with default data
+require('dotenv').config({ path: '.env.local' });
 
-async function initializeKV() {
-  try {
-    console.log('Initializing Vercel KV with default data...');
-    
-    // Check if data already exists
-    const existingData = await kv.get('tanksData');
-    if (existingData) {
-      console.log('Data already exists in KV, skipping initialization');
-      process.exit(0);
-      return;
+// Set development environment
+process.env.NODE_ENV = 'development';
+
+// Import our storage wrapper
+const { getTanksData, setTanksData } = require('../lib/storage');
+
+// Sample tank data to initialize
+const tanksData = {
+  "tanks": [
+    {
+      "id": "1",
+      "name": "Tank 1",
+      "type": "Underground Tank",
+      "location": "Sector A",
+      "progress": [
+        {
+          "stage": "Stage 1",
+          "status": "Completed"
+        },
+        {
+          "stage": "Stage 2",
+          "status": "In Progress"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Tank 2",
+      "type": "Overhead Tank",
+      "location": "Sector B",
+      "progress": [
+        {
+          "stage": "Stage 1",
+          "status": "Completed"
+        }
+      ]
     }
+  ],
+  "lastUpdated": new Date().toISOString()
+};
+
+async function initData() {
+  try {
+    console.log('Initializing database...');
+    console.log('Mode: Local Development');
     
-    // Create default data structure
-    const defaultData = {
-      n00Tanks,
-      n10Tanks,
-      n20Tanks
-    };
+    // Set the data
+    await setTanksData(tanksData);
+    console.log('Successfully initialized database with default data.');
     
-    // Save to KV
-    await kv.set('tanksData', defaultData);
-    console.log('Successfully initialized Vercel KV with default data');
+    // Verify data was stored
+    const verifyData = await getTanksData();
+    console.log('Verification:', verifyData.tanks ? 'Data stored successfully ✓' : 'Failed to store data ✗');
+    console.log('Tanks in database:', verifyData.tanks ? verifyData.tanks.length : 0);
+    
     process.exit(0);
   } catch (error) {
-    console.error('Error initializing Vercel KV:', error);
+    console.error('Error initializing database:', error);
     process.exit(1);
   }
 }
 
-// Run the initialization
-initializeKV(); 
+initData(); 

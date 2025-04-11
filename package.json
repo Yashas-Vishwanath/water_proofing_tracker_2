@@ -2,12 +2,22 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@8.15.4",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "resolutions": {
+    "rollup": "2.79.2",
+    "@vitejs/plugin-react": "4.2.1",
+    "lucide-react": "0.454.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "init-kv": "node scripts/init-kv.js"
+    "init-kv": "node scripts/init-data.js",
+    "vercel-build": "next build && node scripts/init-vercel-kv.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -44,6 +54,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "dotenv": "^16.5.0",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -62,7 +73,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^20.17.30",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "postcss": "^8",

@@ -1,37 +1,49 @@
 import { NextResponse } from 'next/server';
-import { TasksData } from '@/app/data/tanks';
-import { getTanksData, saveTanksData } from '@/app/lib/vercel-kv';
+import fs from 'fs';
+import path from 'path';
+import { promisify } from 'util';
+
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
+
+const DATA_DIR = path.join(process.cwd(), '.local-data');
+const TANKS_FILE = path.join(DATA_DIR, 'tanksData.json');
+
+// Read tanks data from local storage
+async function getTanksData() {
+  try {
+    if (fs.existsSync(TANKS_FILE)) {
+      const data = await readFile(TANKS_FILE, 'utf-8');
+      return JSON.parse(data);
+    }
+    return { tanks: [], lastUpdated: new Date().toISOString() };
+  } catch (error) {
+    console.error('Error reading tanks data:', error);
+    return { tanks: [], lastUpdated: new Date().toISOString() };
+  }
+}
+
+// Write tanks data to local storage
+async function setTanksData(data: any) {
+  try {
+    const jsonData = JSON.stringify(data, null, 2);
+    await writeFile(TANKS_FILE, jsonData, 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Error writing tanks data:', error);
+    return false;
+  }
+}
 
 // GET handler for tasks
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const tasksData = await getTanksData();
-    
-    // Check if we have data or need to initialize with defaults
-    const isEmpty = Object.keys(tasksData.n00Tanks).length === 0 && 
-                   Object.keys(tasksData.n10Tanks).length === 0 && 
-                   Object.keys(tasksData.n20Tanks).length === 0;
-    
-    // If we have no data, let's check for the initialization query parameter
-    if (isEmpty) {
-      const url = new URL(request.url);
-      const initialize = url.searchParams.get('initialize');
-      
-      if (initialize === 'true') {
-        // In a production app, we'd have default data to initialize with
-        // But we'll skip this for now and let the frontend handle initialization
-        return NextResponse.json(
-          { message: 'Empty data structure, please initialize from frontend' },
-          { status: 200 }
-        );
-      }
-    }
-    
-    return NextResponse.json(tasksData);
+    const data = await getTanksData();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error in GET /api/tasks:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve tasks data' },
+      { error: 'Failed to fetch tanks data' },
       { status: 500 }
     );
   }
@@ -40,32 +52,25 @@ export async function GET(request: Request) {
 // POST handler for updating all tasks
 export async function POST(request: Request) {
   try {
-    const tasksData = await request.json() as TasksData;
+    const body = await request.json();
     
-    if (!tasksData || typeof tasksData !== 'object') {
-      return NextResponse.json(
-        { error: 'Invalid data format' },
-        { status: 400 }
-      );
-    }
+    // Update lastUpdated timestamp
+    body.lastUpdated = new Date().toISOString();
     
-    const success = await saveTanksData(tasksData);
+    const success = await setTanksData(body);
     
     if (success) {
-      return NextResponse.json({
-        success: true,
-        message: 'Tasks data updated successfully'
-      });
+      return NextResponse.json({ success: true });
     } else {
       return NextResponse.json(
-        { error: 'Failed to write tasks data' },
+        { error: 'Failed to update tanks data' },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('Error in POST /api/tasks:', error);
     return NextResponse.json(
-      { error: 'Failed to update tasks data', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to update tanks data' },
       { status: 500 }
     );
   }
