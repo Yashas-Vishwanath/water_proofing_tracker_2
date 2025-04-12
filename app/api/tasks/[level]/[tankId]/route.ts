@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { TasksData, WaterTank } from '@/app/data/tanks';
-import { getTanksData, getTank, updateTank } from '@/app/lib/vercel-kv';
+import { WaterTank } from '@/app/data/tanks';
+import { getTank, updateTank } from '@/lib/storage';
 
 interface RouteParams {
   params: {
@@ -80,7 +80,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
   } catch (error) {
     console.error('Error in PUT /api/tasks/[level]/[tankId]:', error);
     return NextResponse.json(
-      { error: 'Failed to update tank', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to update tank' },
       { status: 500 }
     );
   }

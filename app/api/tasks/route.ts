@@ -1,39 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { promisify } from 'util';
-
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-
-const DATA_DIR = path.join(process.cwd(), '.local-data');
-const TANKS_FILE = path.join(DATA_DIR, 'tanksData.json');
-
-// Read tanks data from local storage
-async function getTanksData() {
-  try {
-    if (fs.existsSync(TANKS_FILE)) {
-      const data = await readFile(TANKS_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-    return { tanks: [], lastUpdated: new Date().toISOString() };
-  } catch (error) {
-    console.error('Error reading tanks data:', error);
-    return { tanks: [], lastUpdated: new Date().toISOString() };
-  }
-}
-
-// Write tanks data to local storage
-async function setTanksData(data: any) {
-  try {
-    const jsonData = JSON.stringify(data, null, 2);
-    await writeFile(TANKS_FILE, jsonData, 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Error writing tanks data:', error);
-    return false;
-  }
-}
+import { TasksData } from '@/app/data/tanks';
+import { getTanksData, setTanksData } from '@/lib/storage';
 
 // GET handler for tasks
 export async function GET() {
@@ -52,15 +19,32 @@ export async function GET() {
 // POST handler for updating all tasks
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json() as TasksData;
     
-    // Update lastUpdated timestamp
-    body.lastUpdated = new Date().toISOString();
+    // Validate the data
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid data structure' },
+        { status: 400 }
+      );
+    }
     
-    const success = await setTanksData(body);
+    // Ensure all required levels exist
+    const { n00Tanks = {}, n10Tanks = {}, n20Tanks = {}, ...otherLevels } = body;
+    const validData: TasksData = {
+      n00Tanks,
+      n10Tanks,
+      n20Tanks,
+      ...otherLevels
+    };
+    
+    const success = await setTanksData(validData);
     
     if (success) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ 
+        success: true,
+        message: 'Tank data updated successfully'
+      });
     } else {
       return NextResponse.json(
         { error: 'Failed to update tanks data' },

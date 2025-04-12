@@ -24,39 +24,143 @@ const ensureDataDir = async () => {
   }
 };
 
-// Sample tank data to initialize
+// Sample tank data to initialize with the correct structure for the UI
 const tanksData = {
-  "tanks": [
-    {
-      "id": "1",
-      "name": "Tank 1",
-      "type": "Underground Tank",
-      "location": "Sector A",
+  "n00Tanks": {
+    "PBF-S3-03": {
+      "id": "PBF-S3-03",
+      "name": "SEWAGE WATER | PBF-S3-03",
+      "location": "West Section",
+      "currentStage": "Waterproofing",
       "progress": [
         {
-          "stage": "Stage 1",
+          "stage": "Formwork Removal",
           "status": "Completed"
         },
         {
-          "stage": "Stage 2",
+          "stage": "Repair and Cleaning",
+          "status": "Completed"
+        },
+        {
+          "stage": "Pump Anchors",
+          "status": "Completed"
+        },
+        {
+          "stage": "Slope",
+          "status": "Completed"
+        },
+        {
+          "stage": "Inspection Stage 1",
+          "status": "Completed"
+        },
+        {
+          "stage": "Waterproofing",
           "status": "In Progress"
+        },
+        {
+          "stage": "Inspection Stage 2",
+          "status": "Not Started"
         }
-      ]
-    },
-    {
-      "id": "2",
-      "name": "Tank 2",
-      "type": "Overhead Tank",
-      "location": "Sector B",
+      ],
+      "coordinates": {
+        "top": 495,
+        "left": 100,
+        "width": 20,
+        "height": 20
+      },
+      "type": "SEWAGE WATER"
+    }
+  },
+  "n10Tanks": {
+    "PBF-S2-01": {
+      "id": "PBF-S2-01",
+      "name": "SEWAGE WATER | PBF-S2-01",
+      "location": "Bottom Right",
+      "currentStage": "Formwork Removal",
       "progress": [
         {
-          "stage": "Stage 1",
-          "status": "Completed"
+          "stage": "Formwork Removal",
+          "status": "In Progress"
+        },
+        {
+          "stage": "Repair and Cleaning",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Pump Anchors",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Slope",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Inspection Stage 1",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Waterproofing",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Inspection Stage 2",
+          "status": "Not Started"
         }
-      ]
+      ],
+      "coordinates": {
+        "top": 450,
+        "left": 800,
+        "width": 20,
+        "height": 20
+      },
+      "type": "SEWAGE WATER"
     }
-  ],
-  "lastUpdated": new Date().toISOString()
+  },
+  "n20Tanks": {
+    "PBF-S1-01": {
+      "id": "PBF-S1-01",
+      "name": "RAIN WATER | PBF-S1-01",
+      "location": "Center",
+      "currentStage": "Inspection Stage 1",
+      "progress": [
+        {
+          "stage": "Formwork Removal",
+          "status": "Completed"
+        },
+        {
+          "stage": "Repair and Cleaning",
+          "status": "Completed"
+        },
+        {
+          "stage": "Pump Anchors",
+          "status": "Completed"
+        },
+        {
+          "stage": "Slope",
+          "status": "Completed"
+        },
+        {
+          "stage": "Inspection Stage 1",
+          "status": "In Progress"
+        },
+        {
+          "stage": "Waterproofing",
+          "status": "Not Started"
+        },
+        {
+          "stage": "Inspection Stage 2",
+          "status": "Not Started"
+        }
+      ],
+      "coordinates": {
+        "top": 500,
+        "left": 500,
+        "width": 20,
+        "height": 20
+      },
+      "type": "RAIN WATER"
+    }
+  }
 };
 
 async function saveToLocalStorage(key, value) {
@@ -83,7 +187,10 @@ async function initData() {
     if (success) {
       console.log('Successfully initialized database with default data.');
       console.log('Data saved to:', path.join(DATA_DIR, 'tanksData.json'));
-      console.log('Tanks in database:', tanksData.tanks.length);
+      console.log('Tanks in database:');
+      console.log('  N00:', Object.keys(tanksData.n00Tanks).length);
+      console.log('  N10:', Object.keys(tanksData.n10Tanks).length);
+      console.log('  N20:', Object.keys(tanksData.n20Tanks).length);
     } else {
       console.error('Failed to save data.');
     }
