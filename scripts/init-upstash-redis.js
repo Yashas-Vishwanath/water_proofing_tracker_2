@@ -1,4 +1,4 @@
-// This script initializes the Vercel KV database with default data in production
+// This script initializes the Upstash Redis database with default data in production
 // It's meant to be run as part of the build process on Vercel
 
 // Only run in production environment
@@ -7,8 +7,14 @@ if (process.env.NODE_ENV !== 'production') {
   process.exit(0);
 }
 
-// Import Vercel KV
-const { kv } = require('@vercel/kv');
+// Import Upstash Redis
+const { Redis } = require('@upstash/redis');
+
+// Initialize Redis client
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 // Sample tank data to initialize with the correct structure for the UI
 const tanksData = {
@@ -149,24 +155,26 @@ const tanksData = {
   }
 };
 
-async function initProductionKV() {
+async function initProductionRedis() {
   try {
-    console.log('Checking Vercel KV in production...');
+    console.log('Checking Upstash Redis in production...');
+    console.log('UPSTASH_REDIS_REST_URL:', process.env.UPSTASH_REDIS_REST_URL ? 'Set ✓' : 'Not set ✗');
+    console.log('UPSTASH_REDIS_REST_TOKEN:', process.env.UPSTASH_REDIS_REST_TOKEN ? 'Set ✓' : 'Not set ✗');
     
     // Check if data already exists
-    const existingData = await kv.get('tanksData');
+    const existingData = await redis.get('tanksData');
     
     if (existingData) {
-      console.log('Data already exists in Vercel KV, skipping initialization');
+      console.log('Data already exists in Upstash Redis, skipping initialization');
       return;
     }
     
-    console.log('Initializing Vercel KV with default data...');
-    await kv.set('tanksData', tanksData);
-    console.log('Successfully initialized Vercel KV');
+    console.log('Initializing Upstash Redis with default data...');
+    await redis.set('tanksData', tanksData);
+    console.log('Successfully initialized Upstash Redis');
     
     // Verify data was stored
-    const verifyData = await kv.get('tanksData');
+    const verifyData = await redis.get('tanksData');
     console.log('Verification:', verifyData ? 'Data stored successfully' : 'Failed to store data');
     if (verifyData) {
       console.log('Tanks in database:');
@@ -176,10 +184,11 @@ async function initProductionKV() {
     }
     
   } catch (error) {
-    console.error('Error initializing Vercel KV:', error);
+    console.error('Error initializing Upstash Redis:', error);
+    console.error(error.stack);
     // Don't exit with error code to avoid failing the build
   }
 }
 
 // Run the initialization
-initProductionKV(); 
+initProductionRedis(); 

@@ -1,23 +1,56 @@
 // This is a wrapper that selects the appropriate storage backend
-// In production, it uses Vercel KV
+// In production, it uses Upstash Redis
 // In development, it uses local file-based storage
 
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 import localStorage from './local-storage';
 import { TasksData } from '@/app/data/tanks';
 
 // Check if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Storage interface matching KV
+// Initialize Redis client for production environment
+const redis = isProduction 
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL || '',
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+    })
+  : null;
+
+// Storage interface matching our needs
 export interface Storage {
   get: (key: string) => Promise<any>;
   set: (key: string, value: any) => Promise<any>;
   del: (key: string) => Promise<any>;
 }
 
-// Use Vercel KV in production, local storage in development
-const storage: Storage = isProduction ? kv : localStorage;
+// Create wrapper for Redis or local storage
+const storage: Storage = {
+  async get(key: string) {
+    if (isProduction && redis) {
+      const data = await redis.get(key);
+      return data || null;
+    } else {
+      return await localStorage.get(key);
+    }
+  },
+  
+  async set(key: string, value: any) {
+    if (isProduction && redis) {
+      return await redis.set(key, value);
+    } else {
+      return await localStorage.set(key, value);
+    }
+  },
+  
+  async del(key: string) {
+    if (isProduction && redis) {
+      return await redis.del(key);
+    } else {
+      return await localStorage.del(key);
+    }
+  }
+};
 
 // Helper functions for tanks data
 export async function getTanksData(): Promise<TasksData> {

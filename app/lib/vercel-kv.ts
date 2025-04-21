@@ -1,15 +1,21 @@
-// Import the Vercel KV client
-import { kv } from '@vercel/kv';
+// Import the Upstash Redis client instead of Vercel KV
+import { Redis } from '@upstash/redis';
 import { TasksData } from '../data/tanks';
 
-// For local development without the actual KV, we'll use a fallback
-// to local file system for now
+// For local development without Redis, we'll use a fallback
+// to local file system
 import fs from 'fs';
 import path from 'path';
 import { promises as fsPromises } from 'fs';
 
-// Path for local fallback when KV is not available
+// Path for local fallback when Redis is not available
 const localDataFilePath = path.join(process.cwd(), 'data', 'tasks.json');
+
+// Initialize Redis client for production environment
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 
 // Ensure the data directory exists for local development
 async function ensureLocalDataDirectoryExists() {
@@ -22,26 +28,25 @@ async function ensureLocalDataDirectoryExists() {
   }
 }
 
-// Check if we have KV available or need to use local fallback
-function isVercelKVAvailable() {
-  // Check for Vercel KV environment variables
-  return process.env.VERCEL_ENV === 'production' || 
-         (process.env.KV_URL !== undefined && 
-          process.env.KV_REST_API_URL !== undefined && 
-          process.env.KV_REST_API_TOKEN !== undefined);
+// Check if we have Redis available or need to use local fallback
+function isRedisAvailable() {
+  // Check for Upstash Redis environment variables
+  return process.env.NODE_ENV === 'production' || 
+         (process.env.UPSTASH_REDIS_REST_URL !== undefined && 
+          process.env.UPSTASH_REDIS_REST_TOKEN !== undefined);
 }
 
 // Get all tanks data
 export async function getTanksData(): Promise<TasksData> {
   try {
-    if (isVercelKVAvailable()) {
-      console.log('Using Vercel KV for data storage');
-      // Use Vercel KV in production
-      const data = await kv.get<TasksData>('tanksData');
+    if (isRedisAvailable()) {
+      console.log('Using Upstash Redis for data storage');
+      // Use Upstash Redis in production
+      const data = await redis.get('tanksData');
       if (data) {
-        return data;
+        return data as TasksData;
       } else {
-        // If no data exists yet in KV, return empty structure
+        // If no data exists yet in Redis, return empty structure
         return { 
           n00Tanks: {}, 
           n10Tanks: {}, 
@@ -75,9 +80,9 @@ export async function getTanksData(): Promise<TasksData> {
 // Save all tanks data
 export async function saveTanksData(data: TasksData): Promise<boolean> {
   try {
-    if (isVercelKVAvailable()) {
-      // Use Vercel KV in production
-      await kv.set('tanksData', data);
+    if (isRedisAvailable()) {
+      // Use Upstash Redis in production
+      await redis.set('tanksData', data);
       return true;
     } else {
       // Fallback to file system for local development
