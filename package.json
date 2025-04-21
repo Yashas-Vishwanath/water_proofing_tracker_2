@@ -17,7 +17,8 @@
     "start": "next start",
     "lint": "next lint",
     "init-kv": "node scripts/init-data.js",
-    "vercel-build": "next build && node scripts/init-upstash-redis.js"
+    "vercel-build": "next build",
+    "init-redis": "node scripts/init-upstash-redis.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

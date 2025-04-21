@@ -7,10 +7,9 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_NODE_ENV": "production"
     }
-  ]
+  }
 } 
