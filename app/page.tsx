@@ -295,17 +295,25 @@ export default function ConstructionTracker() {
 
   // Add a function to get all tanks that are ready for inspection
   const getTanksReadyForInspection = () => {
+    // Helper function to check if all stages are completed
+    const isFullyCompleted = (tank: WaterTank) => {
+      return tank.progress.every(p => p.status === "Completed");
+    };
+
     const n00Ready = Object.values(n00TanksData).filter(
-      (tank) => tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2",
-    )
+      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+                !isFullyCompleted(tank)
+    );
 
     const n10Ready = Object.values(n10TanksData).filter(
-      (tank) => tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2",
-    )
+      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+                !isFullyCompleted(tank)
+    );
 
     const n20Ready = Object.values(n20TanksData).filter(
-      (tank) => tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2",
-    )
+      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+                !isFullyCompleted(tank)
+    );
 
     return {
       n00: n00Ready,
