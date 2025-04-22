@@ -492,4 +492,11 @@ export const n20Tanks: Record<string, WaterTank> = {
     },
     type: "RAIN WATER",
   },
-} 
+}
+
+// Combine all tanks by level for easier access
+export const tanksByLevel = {
+  n00Tanks,
+  n10Tanks,
+  n20Tanks
+}; 

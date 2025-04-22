@@ -17,9 +17,10 @@
     "start": "next start",
     "lint": "next lint",
     "init-kv": "node scripts/init-data.js",
-    "vercel-build": "next build",
+    "vercel-build": "next build && node scripts/seed-metadata.js",
     "init-redis": "node scripts/init-upstash-redis.js",
-    "reset-local-data": "node scripts/sync-tanks-data.js"
+    "reset-local-data": "node scripts/sync-tanks-data.js",
+    "seed-metadata": "node scripts/seed-metadata.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -4,7 +4,14 @@
 
 import { Redis } from '@upstash/redis';
 import localStorage from './local-storage';
-import { TasksData } from '@/app/data/tanks';
+import { TasksData, WaterTank, StageProgress, allProgressStages } from '@/app/data/tanks';
+import { n00Tanks, n10Tanks, n20Tanks } from '@/app/data/tanks';
+
+// Default progress for new tanks
+const INITIAL_PROGRESS: StageProgress[] = allProgressStages.map(stage => ({
+  stage,
+  status: "Not Started"
+}));
 
 // Check if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
@@ -22,6 +29,10 @@ export interface Storage {
   get: (key: string) => Promise<any>;
   set: (key: string, value: any) => Promise<any>;
   del: (key: string) => Promise<any>;
+  hget: (key: string, field: string) => Promise<any>;
+  hgetall: (key: string) => Promise<any>;
+  hset: (key: string, field: string, value: any) => Promise<any>;
+  hmset: (key: string, values: Record<string, any>) => Promise<any>;
 }
 
 // Create wrapper for Redis or local storage
@@ -49,18 +60,97 @@ const storage: Storage = {
     } else {
       return await localStorage.del(key);
     }
+  },
+
+  async hget(key: string, field: string) {
+    if (isProduction && redis) {
+      return await redis.hget(key, field);
+    } else {
+      const data = await localStorage.get(key) || {};
+      return data[field] || null;
+    }
+  },
+
+  async hgetall(key: string) {
+    if (isProduction && redis) {
+      return await redis.hgetall(key) || {};
+    } else {
+      return await localStorage.get(key) || {};
+    }
+  },
+
+  async hset(key: string, field: string, value: any) {
+    if (isProduction && redis) {
+      return await redis.hset(key, { [field]: value });
+    } else {
+      const data = await localStorage.get(key) || {};
+      data[field] = value;
+      return await localStorage.set(key, data);
+    }
+  },
+
+  async hmset(key: string, values: Record<string, any>) {
+    if (isProduction && redis) {
+      return await redis.hset(key, values);
+    } else {
+      const data = await localStorage.get(key) || {};
+      Object.assign(data, values);
+      return await localStorage.set(key, data);
+    }
   }
+};
+
+// Static tank data by level
+const staticTanksByLevel: Record<string, Record<string, WaterTank>> = {
+  n00Tanks,
+  n10Tanks,
+  n20Tanks
 };
 
 // Helper functions for tanks data
 export async function getTanksData(): Promise<TasksData> {
   try {
-    const data = await storage.get('tanksData') as TasksData | null;
-    return data || { 
-      n00Tanks: {}, 
-      n10Tanks: {}, 
-      n20Tanks: {} 
+    // Create an object to hold the combined data
+    const combinedData: TasksData = {
+      n00Tanks: {},
+      n10Tanks: {},
+      n20Tanks: {}
     };
+
+    // Process each level
+    for (const level of Object.keys(combinedData)) {
+      // Get the static tanks for this level
+      const staticTanks = staticTanksByLevel[level] || {};
+
+      // For each static tank, merge with its dynamic state
+      for (const [tankId, staticTank] of Object.entries(staticTanks)) {
+        // Get the dynamic state for this tank
+        let tankState: Record<string, any> = {};
+        
+        if (isProduction) {
+          // In production, get from Redis
+          tankState = await storage.hgetall(`state:tank:${level}:${tankId}`);
+        } else {
+          // In development, get from local storage
+          const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+          tankState = allTanksData[level]?.[tankId] || {};
+        }
+
+        // Merge static data with dynamic state
+        combinedData[level][tankId] = {
+          ...staticTank,
+          // Use progress from state if available, otherwise use default progress or static progress
+          progress: tankState.progress ? 
+            (typeof tankState.progress === 'string' ? 
+              JSON.parse(tankState.progress) : tankState.progress) : 
+            staticTank.progress || INITIAL_PROGRESS,
+          // Use currentStage from state if available, otherwise use static value
+          currentStage: tankState.currentStage || staticTank.currentStage
+        };
+      }
+    }
+
+    return combinedData;
   } catch (error) {
     console.error('Error getting tanks data:', error);
     return { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
@@ -69,8 +159,16 @@ export async function getTanksData(): Promise<TasksData> {
 
 export async function setTanksData(data: TasksData) {
   try {
-    await storage.set('tanksData', data);
-    return true;
+    if (isProduction) {
+      // In production, we don't save all data at once
+      // The API should call updateTank for each tank instead
+      console.warn('setTanksData is not fully supported in production. Use updateTank instead.');
+      return false;
+    } else {
+      // In development, save everything to local storage
+      await storage.set('tanksData', data);
+      return true;
+    }
   } catch (error) {
     console.error('Error setting tanks data:', error);
     return false;
@@ -78,10 +176,36 @@ export async function setTanksData(data: TasksData) {
 }
 
 // Helper function to get a specific tank
-export async function getTank(level: string, tankId: string) {
+export async function getTank(level: string, tankId: string): Promise<WaterTank | null> {
   try {
-    const data = await getTanksData();
-    return data[level]?.[tankId] || null;
+    // Get the static tank data
+    const staticTank = staticTanksByLevel[level]?.[tankId];
+    
+    if (!staticTank) {
+      return null;
+    }
+
+    // Get the dynamic state
+    let tankState: Record<string, any> = {};
+    
+    if (isProduction) {
+      // In production, get from Redis
+      tankState = await storage.hgetall(`state:tank:${level}:${tankId}`);
+    } else {
+      // In development, get from local storage
+      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+      tankState = allTanksData[level]?.[tankId] || {};
+    }
+
+    // Merge static data with dynamic state
+    return {
+      ...staticTank,
+      progress: tankState.progress ? 
+        (typeof tankState.progress === 'string' ? 
+          JSON.parse(tankState.progress) : tankState.progress) : 
+        staticTank.progress || INITIAL_PROGRESS,
+      currentStage: tankState.currentStage || staticTank.currentStage
+    };
   } catch (error) {
     console.error(`Error getting tank ${level}/${tankId}:`, error);
     return null;
@@ -89,19 +213,40 @@ export async function getTank(level: string, tankId: string) {
 }
 
 // Helper function to update a specific tank
-export async function updateTank(level: string, tankId: string, updatedTank: any) {
+export async function updateTank(level: string, tankId: string, updatedTank: WaterTank) {
   try {
-    const data = await getTanksData();
+    // Get the static tank data
+    const staticTank = staticTanksByLevel[level]?.[tankId];
     
-    if (!data[level]) {
-      data[level] = {};
+    if (!staticTank) {
+      return false;
     }
-    
-    // Update the tank
-    data[level][tankId] = updatedTank;
-    
-    // Save the updated data
-    return await setTanksData(data);
+
+    // Only save the dynamic state parts
+    if (isProduction) {
+      // In production, save to Redis hash
+      await storage.hmset(`state:tank:${level}:${tankId}`, {
+        progress: JSON.stringify(updatedTank.progress),
+        currentStage: updatedTank.currentStage
+      });
+    } else {
+      // In development, update within local storage
+      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+      
+      if (!allTanksData[level]) {
+        allTanksData[level] = {};
+      }
+      
+      allTanksData[level][tankId] = {
+        ...staticTank,
+        progress: updatedTank.progress,
+        currentStage: updatedTank.currentStage
+      };
+      
+      await storage.set('tanksData', allTanksData);
+    }
+
+    return true;
   } catch (error) {
     console.error(`Error updating tank ${level}/${tankId}:`, error);
     return false;
