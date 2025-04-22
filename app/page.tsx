@@ -48,6 +48,20 @@ export default function ConstructionTracker() {
   // Add a new state for the spreadsheet dialog
   const [isSpreadsheetDialogOpen, setIsSpreadsheetDialogOpen] = useState(false)
 
+  // Image dimensions
+  const targetWidth = 1280;
+  const targetHeight = 900;
+  
+  // Since we're now using images that are already correctly sized (1280x900),
+  // we don't need to scale coordinates anymore
+  const getScaledPosition = (top: number, left: number, level: string) => {
+    // Return the positions directly without scaling
+    return {
+      top: top,
+      left: left
+    };
+  };
+
   // Load tank data from the API when the component mounts
   useEffect(() => {
     async function fetchTasksData() {
@@ -601,7 +615,7 @@ export default function ConstructionTracker() {
               <div className="overflow-auto">
                 <div className="relative" style={{ width: "1280px", height: "900px" }}>
                   <Image
-                    src="/images/N00-1.png"
+                    src="/images/n00.jpg"
                     alt="N00 Level Map"
                     width={1280}
                     height={900}
@@ -609,26 +623,30 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n00TanksData).map((tank) => (
-                    <div
-                      key={tank.id}
-                      className="absolute"
-                      style={{
-                        top: `${tank.coordinates.top}px`,
-                        left: `${tank.coordinates.left}px`,
-                      }}
-                    >
+                  {Object.values(n00TanksData).map((tank) => {
+                    // No scaling needed as the coordinates are already for the target size
+                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N00");
+                    return (
                       <div
-                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        key={tank.id}
+                        className="absolute"
                         style={{
-                          width: `${tank.coordinates.width}px`,
-                          height: `${tank.coordinates.height}px`,
+                          top: `${position.top}px`,
+                          left: `${position.left}px`,
                         }}
-                        onClick={() => handleTankClick(tank.id)}
-                      ></div>
-                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                    </div>
-                  ))}
+                      >
+                        <div
+                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                          style={{
+                            width: `${tank.coordinates.width}px`,
+                            height: `${tank.coordinates.height}px`,
+                          }}
+                          onClick={() => handleTankClick(tank.id)}
+                        ></div>
+                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -637,7 +655,7 @@ export default function ConstructionTracker() {
               <div className="overflow-auto">
                 <div className="relative" style={{ width: "1280px", height: "900px" }}>
                   <Image 
-                    src="/images/N10-1.png" 
+                    src="/images/n10.jpg" 
                     alt="N10 Level Map" 
                     width={1280} 
                     height={900} 
@@ -645,26 +663,30 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n10TanksData).map((tank) => (
-                    <div
-                      key={tank.id}
-                      className="absolute"
-                      style={{
-                        top: `${tank.coordinates.top}px`,
-                        left: `${tank.coordinates.left}px`,
-                      }}
-                    >
+                  {Object.values(n10TanksData).map((tank) => {
+                    // No scaling needed as the coordinates are already for the target size
+                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N10");
+                    return (
                       <div
-                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        key={tank.id}
+                        className="absolute"
                         style={{
-                          width: `${tank.coordinates.width}px`,
-                          height: `${tank.coordinates.height}px`,
+                          top: `${position.top}px`,
+                          left: `${position.left}px`,
                         }}
-                        onClick={() => handleTankClick(tank.id)}
-                      ></div>
-                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                    </div>
-                  ))}
+                      >
+                        <div
+                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                          style={{
+                            width: `${tank.coordinates.width}px`,
+                            height: `${tank.coordinates.height}px`,
+                          }}
+                          onClick={() => handleTankClick(tank.id)}
+                        ></div>
+                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -673,7 +695,7 @@ export default function ConstructionTracker() {
               <div className="overflow-auto">
                 <div className="relative" style={{ width: "1280px", height: "900px" }}>
                   <Image 
-                    src="/images/N20-1.png" 
+                    src="/images/n20.jpg" 
                     alt="N20 Level Map" 
                     width={1280} 
                     height={900} 
@@ -681,26 +703,30 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n20TanksData).map((tank) => (
-                    <div
-                      key={tank.id}
-                      className="absolute"
-                      style={{
-                        top: `${tank.coordinates.top}px`,
-                        left: `${tank.coordinates.left}px`,
-                      }}
-                    >
+                  {Object.values(n20TanksData).map((tank) => {
+                    // No scaling needed as the coordinates are already for the target size
+                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N20");
+                    return (
                       <div
-                        className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                        key={tank.id}
+                        className="absolute"
                         style={{
-                          width: `${tank.coordinates.width}px`,
-                          height: `${tank.coordinates.height}px`,
+                          top: `${position.top}px`,
+                          left: `${position.left}px`,
                         }}
-                        onClick={() => handleTankClick(tank.id)}
-                      ></div>
-                      <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                    </div>
-                  ))}
+                      >
+                        <div
+                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                          style={{
+                            width: `${tank.coordinates.width}px`,
+                            height: `${tank.coordinates.height}px`,
+                          }}
+                          onClick={() => handleTankClick(tank.id)}
+                        ></div>
+                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
