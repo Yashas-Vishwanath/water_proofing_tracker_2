@@ -9,6 +9,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Import Upstash Redis
 const { Redis } = require('@upstash/redis');
+const { isProduction } = require('../lib/constants');
 
 // Initialize Redis client
 const redis = new Redis({
@@ -16,9 +17,10 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// Sample tank data to initialize with the correct structure for the UI
-const tanksData = {
-  "n00Tanks": {
+// Sample tank data structure for the UI (matches what is shown in the UI)
+const sampleTanksData = {
+  // N00 Level Tanks
+  n00Tanks: {
     "PBF-S3-03": {
       "id": "PBF-S3-03",
       "name": "SEWAGE WATER | PBF-S3-03",
@@ -63,52 +65,157 @@ const tanksData = {
       "type": "SEWAGE WATER"
     }
   },
-  "n10Tanks": {
-    "PBF-S2-01": {
-      "id": "PBF-S2-01",
-      "name": "SEWAGE WATER | PBF-S2-01",
-      "location": "Bottom Right",
-      "currentStage": "Formwork Removal",
-      "progress": [
-        {
-          "stage": "Formwork Removal",
-          "status": "In Progress"
-        },
-        {
-          "stage": "Repair and Cleaning",
-          "status": "Not Started"
-        },
-        {
-          "stage": "Pump Anchors",
-          "status": "Not Started"
-        },
-        {
-          "stage": "Slope",
-          "status": "Not Started"
-        },
-        {
-          "stage": "Inspection Stage 1",
-          "status": "Not Started"
-        },
-        {
-          "stage": "Waterproofing",
-          "status": "Not Started"
-        },
-        {
-          "stage": "Inspection Stage 2",
-          "status": "Not Started"
-        }
-      ],
-      "coordinates": {
-        "top": 450,
-        "left": 800,
-        "width": 20,
-        "height": 20
+  
+  // N10 Level Tanks
+  n10Tanks: {
+    "CAMRI-WQ": {
+      id: "CAMRI-WQ",
+      name: "CAMRI-WQ",
+      location: "Second floor",
+      type: "water",
+      coordinates: { x: 750, y: 360 },
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'Inspect water supply' },
+          { id: 'task2', completed: false, description: 'Check pressure valve' },
+          { id: 'task3', completed: false, description: 'Verify flow meter' }
+        ]
+      }
+    },
+    "RTP-12": {
+      id: "RTP-12",
+      name: "RTP-12",
+      location: "East wing",
+      type: "chemical",
+      coordinates: { x: 480, y: 480 },
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'Check pH level' },
+          { id: 'task2', completed: false, description: 'Inspect chemical mixture' },
+          { id: 'task3', completed: false, description: 'Verify safety protocols' }
+        ]
+      }
+    },
+    "FEC-PB-08": {
+      id: "FEC-PB-08",
+      name: "FEC-PB-08",
+      location: "North wing",
+      type: "water",
+      coordinates: { x: 600, y: 280 },
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'Check water level' },
+          { id: 'task2', completed: false, description: 'Inspect filtration system' },
+          { id: 'task3', completed: false, description: 'Test valve operation' }
+        ]
+      }
+    },
+    "EB16-STE-089": {
+      id: "EB16-STE-089",
+      name: "EB16-STE-089",
+      location: "South wing",
+      type: "chemical",
+      coordinates: { x: 320, y: 420 },
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'Check chemical levels' },
+          { id: 'task2', completed: false, description: 'Inspect mixing mechanism' },
+          { id: 'task3', completed: false, description: 'Test safety valve' }
+        ]
+      }
+    },
+    "EB1-INTERIOR": {
+      id: "EB1-INTERIOR",
+      name: "EB1 Interior Tanks",
+      location: "EB1 Building",
+      type: "water",
+      coordinates: { x: 390, y: 340 },
+      isGrouped: true,
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'General inspection' },
+          { id: 'task2', completed: false, description: 'System check' },
+          { id: 'task3', completed: false, description: 'Documentation' }
+        ]
       },
-      "type": "SEWAGE WATER"
+      subTanks: [
+        {
+          id: "INTERIOR-1",
+          name: "Interior Tank 1",
+          currentStage: "initial",
+          progress: {
+            tasks: [
+              { id: 'task1', completed: false, description: 'Check water quality' },
+              { id: 'task2', completed: false, description: 'Inspect interior walls' },
+              { id: 'task3', completed: false, description: 'Test pressure system' }
+            ]
+          }
+        },
+        {
+          id: "INTERIOR-2",
+          name: "Interior Tank 2",
+          currentStage: "initial",
+          progress: {
+            tasks: [
+              { id: 'task1', completed: false, description: 'Check water level' },
+              { id: 'task2', completed: false, description: 'Inspect valves' },
+              { id: 'task3', completed: false, description: 'Test circulation system' }
+            ]
+          }
+        }
+      ]
+    },
+    "EB9": {
+      id: "EB9",
+      name: "EB9 Tanks",
+      location: "EB9 Building",
+      type: "chemical",
+      coordinates: { x: 270, y: 380 },
+      isGrouped: true,
+      currentStage: "initial",
+      progress: {
+        tasks: [
+          { id: 'task1', completed: false, description: 'General inspection' },
+          { id: 'task2', completed: false, description: 'System check' },
+          { id: 'task3', completed: false, description: 'Documentation' }
+        ]
+      },
+      subTanks: [
+        {
+          id: "INTERIOR",
+          name: "Interior Chemical Tank",
+          currentStage: "initial",
+          progress: {
+            tasks: [
+              { id: 'task1', completed: false, description: 'Check chemical levels' },
+              { id: 'task2', completed: false, description: 'Inspect mixing system' },
+              { id: 'task3', completed: false, description: 'Test safety valves' }
+            ]
+          }
+        },
+        {
+          id: "EXTERIOR",
+          name: "Exterior Chemical Tank",
+          currentStage: "initial",
+          progress: {
+            tasks: [
+              { id: 'task1', completed: false, description: 'Check external integrity' },
+              { id: 'task2', completed: false, description: 'Inspect connections' },
+              { id: 'task3', completed: false, description: 'Test emergency systems' }
+            ]
+          }
+        }
+      ]
     }
   },
-  "n20Tanks": {
+  
+  // N20 Level Tanks
+  n20Tanks: {
     "PBF-S1-01": {
       "id": "PBF-S1-01",
       "name": "RAIN WATER | PBF-S1-01",
@@ -155,40 +262,85 @@ const tanksData = {
   }
 };
 
+// Helper function to check if data exists in Redis
+async function checkDataExists() {
+  try {
+    const keys = await redis.keys('*');
+    if (keys.length > 0) {
+      console.log('Data already exists in Redis:', keys);
+      // Check if we have the expected data structure
+      const n10TanksData = await redis.get('tanksData:n10Tanks');
+      if (n10TanksData) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking data:', error);
+    return false;
+  }
+}
+
+// Initialize Redis with the sample data
 async function initProductionRedis() {
   try {
-    console.log('Checking Upstash Redis in production...');
-    console.log('UPSTASH_REDIS_REST_URL:', process.env.UPSTASH_REDIS_REST_URL ? 'Set ✓' : 'Not set ✗');
-    console.log('UPSTASH_REDIS_REST_TOKEN:', process.env.UPSTASH_REDIS_REST_TOKEN ? 'Set ✓' : 'Not set ✗');
+    const dataExists = await checkDataExists();
     
-    // Check if data already exists
-    const existingData = await redis.get('tanksData');
-    
-    if (existingData) {
-      console.log('Data already exists in Upstash Redis, skipping initialization');
+    if (dataExists) {
+      console.log('Tank data already exists in Redis, skipping initialization.');
       return;
     }
     
-    console.log('Initializing Upstash Redis with default data...');
-    await redis.set('tanksData', tanksData);
-    console.log('Successfully initialized Upstash Redis');
+    console.log('Initializing Redis with sample tank data...');
     
-    // Verify data was stored
-    const verifyData = await redis.get('tanksData');
-    console.log('Verification:', verifyData ? 'Data stored successfully' : 'Failed to store data');
-    if (verifyData) {
-      console.log('Tanks in database:');
-      console.log('  N00:', Object.keys(verifyData.n00Tanks || {}).length);
-      console.log('  N10:', Object.keys(verifyData.n10Tanks || {}).length);
-      console.log('  N20:', Object.keys(verifyData.n20Tanks || {}).length);
+    // Set the main tanksData structure
+    await redis.set('tanksData', sampleTanksData);
+    
+    // Also set individual level data for easier access
+    await redis.set('tanksData:n00Tanks', sampleTanksData.n00Tanks);
+    await redis.set('tanksData:n10Tanks', sampleTanksData.n10Tanks);
+    await redis.set('tanksData:n20Tanks', sampleTanksData.n20Tanks);
+    
+    // Initialize individual tank states in Redis hashes
+    // This will make it easier to update individual tanks later
+    for (const [level, tanks] of Object.entries(sampleTanksData)) {
+      const levelKey = level.replace('Tanks', ''); // Convert n00Tanks to n00
+      
+      for (const [tankId, tank] of Object.entries(tanks)) {
+        // Store the main tank data
+        await redis.hmset(`state:tank:${levelKey}:${tankId}`, {
+          progress: JSON.stringify(tank.progress),
+          currentStage: tank.currentStage
+        });
+        
+        // If this is a grouped tank with sub-tanks, store each sub-tank separately
+        if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
+          for (const subTank of tank.subTanks) {
+            await redis.hmset(`state:subtank:${levelKey}:${tankId}:${subTank.id}`, {
+              progress: JSON.stringify(subTank.progress),
+              currentStage: subTank.currentStage
+            });
+          }
+        }
+      }
     }
     
+    // Verify data was saved correctly
+    const verifyData = await redis.get('tanksData:n10Tanks');
+    console.log('Verification - N10 Tanks data saved:', !!verifyData);
+    
+    console.log('Redis initialization complete!');
   } catch (error) {
-    console.error('Error initializing Upstash Redis:', error);
-    console.error(error.stack);
-    // Don't exit with error code to avoid failing the build
+    console.error('Error initializing Redis:', error);
   }
 }
 
 // Run the initialization
-initProductionRedis(); 
+initProductionRedis().then(() => {
+  console.log('Initialization process completed.');
+  // Note: In serverless environments, we need to explicitly exit
+  process.exit(0);
+}).catch(error => {
+  console.error('Initialization process failed:', error);
+  process.exit(1);
+}); 

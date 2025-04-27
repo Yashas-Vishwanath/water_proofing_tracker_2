@@ -25,10 +25,15 @@ declare global {
   }
 }
 
+// Add this interface extension to WaterTank to include currentSubTankIndex
+interface ExtendedWaterTank extends WaterTank {
+  currentSubTankIndex?: number;
+}
+
 export default function ConstructionTracker() {
   // State for active section and tank
   const [activeSection, setActiveSection] = useState<string | null>("N00")
-  const [selectedTank, setSelectedTank] = useState<WaterTank | null>(null)
+  const [selectedTank, setSelectedTank] = useState<ExtendedWaterTank | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isWaterTanksOpen, setIsWaterTanksOpen] = useState(false)
   const [isMechanicalPitsOpen, setIsMechanicalPitsOpen] = useState(false)
@@ -349,16 +354,34 @@ export default function ConstructionTracker() {
     const stageIndex = allProgressStages.findIndex((s) => s === stage)
     if (stageIndex === -1) return
 
-    // Get current status
-    const currentStatus = selectedTank.progress.find((p) => p.stage === stage)?.status
+    // Check if we're dealing with a grouped tank or a regular tank
+    if (selectedTank.isGrouped && selectedTank.subTanks && selectedTank.currentSubTankIndex !== undefined) {
+      // We're dealing with a specific sub-tank in a grouped tank
+      // Get current status from the sub-tank
+      const subTank = selectedTank.subTanks[selectedTank.currentSubTankIndex]
+      const currentStatus = subTank.progress.find((p) => p.stage === stage)?.status
 
-    if (currentStatus === "Completed") {
-      // If trying to undo a completed task
-      setStageToUndo(stage)
-      setConfirmDialogOpen(true)
+      if (currentStatus === "Completed") {
+        // If trying to undo a completed task
+        setStageToUndo(stage)
+        setConfirmDialogOpen(true)
+      } else {
+        // Mark task as completed
+        markTaskAsCompleted(stage)
+      }
     } else {
-      // Mark task as completed
-      markTaskAsCompleted(stage)
+      // Regular tank handling
+      // Get current status
+      const currentStatus = selectedTank.progress.find((p) => p.stage === stage)?.status
+
+      if (currentStatus === "Completed") {
+        // If trying to undo a completed task
+        setStageToUndo(stage)
+        setConfirmDialogOpen(true)
+      } else {
+        // Mark task as completed
+        markTaskAsCompleted(stage)
+      }
     }
   }
 
@@ -370,39 +393,94 @@ export default function ConstructionTracker() {
     const stageIndex = allProgressStages.findIndex((s) => s === stage)
     if (stageIndex === -1) return
 
-    // Update the tank's progress
-    const updatedProgress = [...selectedTank.progress]
+    // Check if we're dealing with a grouped tank or a regular tank
+    if (selectedTank.isGrouped && selectedTank.subTanks && selectedTank.currentSubTankIndex !== undefined) {
+      // We're dealing with a specific sub-tank in a grouped tank
+      const subTankIndex = selectedTank.currentSubTankIndex
+      const subTank = { ...selectedTank.subTanks[subTankIndex] }
+      
+      // Update the sub-tank's progress
+      const updatedProgress = [...subTank.progress]
 
-    // Mark the current stage as completed
-    updatedProgress[stageIndex] = {
-      ...updatedProgress[stageIndex],
-      status: "Completed",
-    }
-
-    // If there's a next stage, mark it as in progress
-    if (stageIndex < updatedProgress.length - 1) {
-      updatedProgress[stageIndex + 1] = {
-        ...updatedProgress[stageIndex + 1],
-        status: "In Progress",
+      // Mark the current stage as completed
+      updatedProgress[stageIndex] = {
+        ...updatedProgress[stageIndex],
+        status: "Completed",
       }
+
+      // If there's a next stage, mark it as in progress
+      if (stageIndex < updatedProgress.length - 1) {
+        updatedProgress[stageIndex + 1] = {
+          ...updatedProgress[stageIndex + 1],
+          status: "In Progress",
+        }
+      }
+
+      // Update the sub-tank's current stage
+      const nextStage =
+        stageIndex < allProgressStages.length - 1 ? allProgressStages[stageIndex + 1] : allProgressStages[stageIndex]
+
+      // Update the sub-tank
+      const updatedSubTank = {
+        ...subTank,
+        progress: updatedProgress,
+        currentStage: nextStage,
+      }
+
+      // Create a copy of all sub-tanks
+      const updatedSubTanks = [...selectedTank.subTanks]
+      // Update the specific sub-tank
+      updatedSubTanks[subTankIndex] = updatedSubTank
+
+      // Create updated grouped tank
+      const updatedTank = {
+        ...selectedTank,
+        subTanks: updatedSubTanks,
+        // Also update the progress array that was temporarily copied to the parent
+        progress: updatedProgress,
+      }
+
+      // Update the appropriate tanks data state
+      updateTankData(updatedTank)
+
+      // Update selected tank
+      setSelectedTank(updatedTank)
+    } else {
+      // Regular tank handling
+      // Update the tank's progress
+      const updatedProgress = [...selectedTank.progress]
+
+      // Mark the current stage as completed
+      updatedProgress[stageIndex] = {
+        ...updatedProgress[stageIndex],
+        status: "Completed",
+      }
+
+      // If there's a next stage, mark it as in progress
+      if (stageIndex < updatedProgress.length - 1) {
+        updatedProgress[stageIndex + 1] = {
+          ...updatedProgress[stageIndex + 1],
+          status: "In Progress",
+        }
+      }
+
+      // Update the tank's current stage
+      const nextStage =
+        stageIndex < allProgressStages.length - 1 ? allProgressStages[stageIndex + 1] : allProgressStages[stageIndex]
+
+      // Create updated tank
+      const updatedTank = {
+        ...selectedTank,
+        progress: updatedProgress,
+        currentStage: nextStage,
+      }
+
+      // Update the appropriate tanks data state
+      updateTankData(updatedTank)
+
+      // Update selected tank
+      setSelectedTank(updatedTank)
     }
-
-    // Update the tank's current stage
-    const nextStage =
-      stageIndex < allProgressStages.length - 1 ? allProgressStages[stageIndex + 1] : allProgressStages[stageIndex]
-
-    // Create updated tank
-    const updatedTank = {
-      ...selectedTank,
-      progress: updatedProgress,
-      currentStage: nextStage,
-    }
-
-    // Update the appropriate tanks data state
-    updateTankData(updatedTank)
-
-    // Update selected tank
-    setSelectedTank(updatedTank)
   }
 
   // Function to undo a task
@@ -413,29 +491,74 @@ export default function ConstructionTracker() {
     const stageIndex = allProgressStages.findIndex((s) => s === stageToUndo)
     if (stageIndex === -1) return
 
-    // Update the tank's progress
-    const updatedProgress = [...selectedTank.progress]
+    // Check if we're dealing with a grouped tank or a regular tank
+    if (selectedTank.isGrouped && selectedTank.subTanks && selectedTank.currentSubTankIndex !== undefined) {
+      // We're dealing with a specific sub-tank in a grouped tank
+      const subTankIndex = selectedTank.currentSubTankIndex
+      const subTank = { ...selectedTank.subTanks[subTankIndex] }
 
-    // Mark the current stage and all subsequent stages as not started
-    for (let i = stageIndex; i < updatedProgress.length; i++) {
-      updatedProgress[i] = {
-        ...updatedProgress[i],
-        status: i === stageIndex ? "In Progress" : "Not Started",
+      // Update the sub-tank's progress
+      const updatedSubTankProgress = [...subTank.progress]
+
+      // Mark the current stage and all subsequent stages as not started
+      for (let i = stageIndex; i < updatedSubTankProgress.length; i++) {
+        updatedSubTankProgress[i] = {
+          ...updatedSubTankProgress[i],
+          status: i === stageIndex ? "In Progress" : "Not Started",
+        }
       }
+
+      // Update the sub-tank
+      const updatedSubTank = {
+        ...subTank,
+        progress: updatedSubTankProgress,
+        currentStage: stageToUndo,
+      }
+
+      // Create a copy of all sub-tanks
+      const updatedSubTanks = [...selectedTank.subTanks]
+      // Update the specific sub-tank
+      updatedSubTanks[subTankIndex] = updatedSubTank
+
+      // Create updated grouped tank
+      const updatedGroupedTank = {
+        ...selectedTank,
+        subTanks: updatedSubTanks,
+        // Also update the progress array that was temporarily copied to the parent
+        progress: updatedSubTankProgress,
+      }
+
+      // Update the appropriate tanks data state
+      updateTankData(updatedGroupedTank)
+
+      // Update selected tank
+      setSelectedTank(updatedGroupedTank)
+    } else {
+      // Regular tank handling - existing code
+      // Update the tank's progress
+      const updatedProgress = [...selectedTank.progress]
+
+      // Mark the current stage and all subsequent stages as not started
+      for (let i = stageIndex; i < updatedProgress.length; i++) {
+        updatedProgress[i] = {
+          ...updatedProgress[i],
+          status: i === stageIndex ? "In Progress" : "Not Started",
+        }
+      }
+
+      // Update the tank's current stage
+      const updatedTank = {
+        ...selectedTank,
+        progress: updatedProgress,
+        currentStage: stageToUndo,
+      }
+
+      // Update the appropriate tanks data state
+      updateTankData(updatedTank)
+
+      // Update selected tank
+      setSelectedTank(updatedTank)
     }
-
-    // Update the tank's current stage
-    const updatedTank = {
-      ...selectedTank,
-      progress: updatedProgress,
-      currentStage: stageToUndo,
-    }
-
-    // Update the appropriate tanks data state
-    updateTankData(updatedTank)
-
-    // Update selected tank
-    setSelectedTank(updatedTank)
 
     // Close the confirm dialog
     setConfirmDialogOpen(false)
@@ -443,38 +566,45 @@ export default function ConstructionTracker() {
   }
 
   // Function to update tank data in the appropriate state and API
-  const updateTankData = async (updatedTank: WaterTank) => {
+  const updateTankData = async (updatedTank: ExtendedWaterTank) => {
     // First update local state
     const levelKey = activeSection === "N00" ? "n00Tanks" : 
                     activeSection === "N10" ? "n10Tanks" : 
                     activeSection === "N20" ? "n20Tanks" : null;
     
     if (!levelKey) return;
+
+    // Create a clean version of the tank without temporary properties
+    const cleanTank = { ...updatedTank };
+    // Remove temporary properties that shouldn't be stored
+    if ('currentSubTankIndex' in cleanTank) {
+      delete cleanTank.currentSubTankIndex;
+    }
     
     if (activeSection === "N00") {
       setN00TanksData((prev) => ({
         ...prev,
-        [updatedTank.id]: updatedTank,
+        [cleanTank.id]: cleanTank,
       }))
     } else if (activeSection === "N10") {
       setN10TanksData((prev) => ({
         ...prev,
-        [updatedTank.id]: updatedTank,
+        [cleanTank.id]: cleanTank,
       }))
     } else if (activeSection === "N20") {
       setN20TanksData((prev) => ({
         ...prev,
-        [updatedTank.id]: updatedTank,
+        [cleanTank.id]: cleanTank,
       }))
     }
 
     // Then update via API
     try {
       const apiLevel = levelKey;
-      await fetch(`/api/tasks/${apiLevel}/${updatedTank.id}`, {
+      await fetch(`/api/tasks/${apiLevel}/${cleanTank.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updatedTank })
+        body: JSON.stringify({ updatedTank: cleanTank })
       });
     } catch (error) {
       console.error("Error updating tank via API:", error);
@@ -753,29 +883,79 @@ export default function ConstructionTracker() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{selectedTank?.name}</DialogTitle>
+            {selectedTank?.location && (
+              <DialogDescription>{selectedTank.location}</DialogDescription>
+            )}
           </DialogHeader>
-          <div className="grid gap-2 py-4">
-            {selectedTank?.progress.map((stage, index) => {
-              // Determine if this is the current ongoing task
-              const isCurrentTask = stage.status === "In Progress"
-
-              return (
-                <div
-                  key={stage.stage}
-                  className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
-                  onClick={() => toggleTaskCompletion(stage.stage)}
-                >
-                  <div
-                    className={`w-6 h-6 border rounded-md flex items-center justify-center ${stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"}`}
-                  >
-                    {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+          
+          {selectedTank?.isGrouped && selectedTank.subTanks ? (
+            // If this is a grouped tank, show sub-tanks
+            <div className="grid gap-4 py-2">
+              {selectedTank.subTanks.map((subTank, index) => (
+                <div key={subTank.id} className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-semibold text-lg mb-2">{subTank.name}</h3>
+                  <div className="grid gap-2">
+                    {subTank.progress.map((stage, stageIndex) => {
+                      // Determine if this is the current ongoing task
+                      const isCurrentTask = stage.status === "In Progress";
+                      
+                      return (
+                        <div
+                          key={`${subTank.id}-${stage.stage}`}
+                          className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
+                          onClick={() => {
+                            // Create a temporary copy of the selected tank with this sub-tank's progress
+                            const tempSelectedTank = {
+                              ...selectedTank,
+                              currentSubTankIndex: index,
+                              progress: subTank.progress
+                            };
+                            setSelectedTank(tempSelectedTank);
+                            toggleTaskCompletion(stage.stage);
+                          }}
+                        >
+                          <div
+                            className={`w-6 h-6 border rounded-md flex items-center justify-center ${
+                              stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"
+                            }`}
+                          >
+                            {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+                          </div>
+                          <div className="flex-1">{stage.stage}</div>
+                          {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex-1">{stage.stage}</div>
-                  {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
                 </div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            // Regular non-grouped tank
+            <div className="grid gap-2 py-4">
+              {selectedTank?.progress.map((stage, index) => {
+                // Determine if this is the current ongoing task
+                const isCurrentTask = stage.status === "In Progress"
+
+                return (
+                  <div
+                    key={stage.stage}
+                    className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
+                    onClick={() => toggleTaskCompletion(stage.stage)}
+                  >
+                    <div
+                      className={`w-6 h-6 border rounded-md flex items-center justify-center ${stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"}`}
+                    >
+                      {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+                    </div>
+                    <div className="flex-1">{stage.stage}</div>
+                    {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          
           <div className="flex justify-end mt-4">
             <Button
               variant="outline"

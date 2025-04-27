@@ -191,6 +191,36 @@ export async function getTank(level: string, tankId: string): Promise<WaterTank 
     if (isProduction) {
       // In production, get from Redis
       tankState = await storage.hgetall(`state:tank:${level}:${tankId}`);
+      
+      // If this is a grouped tank, fetch state for each sub-tank
+      if (staticTank.isGrouped && staticTank.subTanks) {
+        const updatedSubTanks = await Promise.all(
+          staticTank.subTanks.map(async (subTank) => {
+            const subTankState = await storage.hgetall(`state:subtank:${level}:${tankId}:${subTank.id}`);
+            
+            // Merge static sub-tank data with dynamic state
+            return {
+              ...subTank,
+              progress: subTankState.progress ? 
+                (typeof subTankState.progress === 'string' ? 
+                  JSON.parse(subTankState.progress) : subTankState.progress) : 
+                subTank.progress,
+              currentStage: subTankState.currentStage || subTank.currentStage
+            };
+          })
+        );
+        
+        // Merge static tank with dynamic data including updated sub-tanks
+        return {
+          ...staticTank,
+          progress: tankState.progress ? 
+            (typeof tankState.progress === 'string' ? 
+              JSON.parse(tankState.progress) : tankState.progress) : 
+            staticTank.progress || INITIAL_PROGRESS,
+          currentStage: tankState.currentStage || staticTank.currentStage,
+          subTanks: updatedSubTanks
+        };
+      }
     } else {
       // In development, get from local storage
       const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
@@ -204,7 +234,8 @@ export async function getTank(level: string, tankId: string): Promise<WaterTank 
         (typeof tankState.progress === 'string' ? 
           JSON.parse(tankState.progress) : tankState.progress) : 
         staticTank.progress || INITIAL_PROGRESS,
-      currentStage: tankState.currentStage || staticTank.currentStage
+      currentStage: tankState.currentStage || staticTank.currentStage,
+      subTanks: tankState.subTanks || staticTank.subTanks
     };
   } catch (error) {
     console.error(`Error getting tank ${level}/${tankId}:`, error);
@@ -229,6 +260,18 @@ export async function updateTank(level: string, tankId: string, updatedTank: Wat
         progress: JSON.stringify(updatedTank.progress),
         currentStage: updatedTank.currentStage
       });
+      
+      // If this is a grouped tank with sub-tanks, save each sub-tank's state
+      if (updatedTank.isGrouped && updatedTank.subTanks) {
+        await Promise.all(
+          updatedTank.subTanks.map(async (subTank) => {
+            return storage.hmset(`state:subtank:${level}:${tankId}:${subTank.id}`, {
+              progress: JSON.stringify(subTank.progress),
+              currentStage: subTank.currentStage
+            });
+          })
+        );
+      }
     } else {
       // In development, update within local storage
       const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
@@ -240,7 +283,8 @@ export async function updateTank(level: string, tankId: string, updatedTank: Wat
       allTanksData[level][tankId] = {
         ...staticTank,
         progress: updatedTank.progress,
-        currentStage: updatedTank.currentStage
+        currentStage: updatedTank.currentStage,
+        subTanks: updatedTank.subTanks
       };
       
       await storage.set('tanksData', allTanksData);

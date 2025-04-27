@@ -239,6 +239,83 @@ const n10Tanks = {
       width: 20,
       height: 20,
     }
+  },
+  "FEC-PB-08": {
+    id: "FEC-PB-08",
+    name: "WATER TANKS | FEC-PB-08",
+    location: "Bottom Left",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 685,
+      left: 425,
+      width: 20,
+      height: 20,
+    }
+  },
+  "EB16-STE-089": {
+    id: "EB16-STE-089",
+    name: "WATER TANKS | EB16-STE-089",
+    location: "Left Center",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 455,
+      left: 280,
+      width: 20,
+      height: 20,
+    },
+    isGrouped: true
+  },
+  "EB1-INTERIOR-1": {
+    id: "EB1-INTERIOR-1",
+    name: "WATER TANKS | EB1-INTERIOR",
+    location: "Right Center Upper",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 370,
+      left: 950,
+      width: 20,
+      height: 20,
+    },
+    isGrouped: true
+  },
+  "EB1-INTERIOR-2": {
+    id: "EB1-INTERIOR-2",
+    name: "WATER TANKS | EB1-INTERIOR",
+    location: "Right Center Lower",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 405,
+      left: 950,
+      width: 20,
+      height: 20,
+    },
+    isGrouped: true
+  },
+  "EB1-EXTERIOR": {
+    id: "EB1-EXTERIOR",
+    name: "WATER TANKS | EB1-EXTERIOR",
+    location: "Right Upper",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 350,
+      left: 1015,
+      width: 20,
+      height: 20,
+    },
+    isGrouped: true
+  },
+  "EB9": {
+    id: "EB9",
+    name: "WATER TANKS | EB9",
+    location: "Bottom Right",
+    type: "WATER TANKS",
+    coordinates: {
+      top: 715,
+      left: 980,
+      width: 20,
+      height: 20,
+    },
+    isGrouped: true
   }
 };
 
