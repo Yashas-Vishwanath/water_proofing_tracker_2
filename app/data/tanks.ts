@@ -15,7 +15,7 @@ export type StageProgress = {
   status: ProgressStatus
 }
 
-export type TankType = "SEWAGE WATER" | "RAIN WATER" | "CHILLER ROOM" | "WATER TANKS"
+export type TankType = "SEWAGE WATER" | "RAIN WATER" | "CHILLER ROOM" | "WATER TANKS" | "MANHOLE"
 
 // Sub-tank type for nested tanks
 export type SubTank = {
@@ -406,7 +406,7 @@ export const n10Tanks: Record<string, WaterTank> = {
   },
   "FEC-PB-08": {
     id: "FEC-PB-08",
-    name: "WATER TANKS | FEC-PB-08",
+    name: "MANHOLE | FEC-PB-08",
     location: "Bottom Left",
     currentStage: "Formwork Removal",
     progress: allProgressStages.map((stage) => ({
@@ -419,7 +419,7 @@ export const n10Tanks: Record<string, WaterTank> = {
       width: 20,
       height: 20,
     },
-    type: "WATER TANKS",
+    type: "MANHOLE",
   },
   "EB16-STE-089": {
     id: "EB16-STE-089",

@@ -242,9 +242,9 @@ const n10Tanks = {
   },
   "FEC-PB-08": {
     id: "FEC-PB-08",
-    name: "WATER TANKS | FEC-PB-08",
+    name: "MANHOLE | FEC-PB-08",
     location: "Bottom Left",
-    type: "WATER TANKS",
+    type: "MANHOLE",
     coordinates: {
       top: 685,
       left: 425,

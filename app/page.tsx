@@ -286,7 +286,7 @@ export default function ConstructionTracker() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", "water_tanks_progress.csv")
+    link.setAttribute("download", "manholes_progress.csv")
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -298,7 +298,7 @@ export default function ConstructionTracker() {
     setIsInspectionDialogOpen(true)
   }
 
-  // Add a function to get all tanks that are ready for inspection
+  // Add a function to get all manholes that are ready for inspection
   const getTanksReadyForInspection = () => {
     // Helper function to check if all stages are completed
     const isFullyCompleted = (tank: WaterTank) => {
