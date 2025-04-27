@@ -9,13 +9,17 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Import Upstash Redis
 const { Redis } = require('@upstash/redis');
-const { isProduction } = require('../lib/constants');
 
 // Initialize Redis client
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
+
+// Log Redis connection details (without exposing sensitive info)
+console.log('Initializing Redis client for tank data');
+console.log('UPSTASH_REDIS_REST_URL:', process.env.UPSTASH_REDIS_REST_URL ? 'Set ✓' : 'Missing ✗');
+console.log('UPSTASH_REDIS_REST_TOKEN:', process.env.UPSTASH_REDIS_REST_TOKEN ? 'Set ✓' : 'Missing ✗');
 
 // Sample tank data structure for the UI (matches what is shown in the UI)
 const sampleTanksData = {
