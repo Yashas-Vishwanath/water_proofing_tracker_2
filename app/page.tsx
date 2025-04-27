@@ -880,7 +880,7 @@ export default function ConstructionTracker() {
 
       {/* Tank Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{selectedTank?.name}</DialogTitle>
             {selectedTank?.location && (
@@ -889,10 +889,10 @@ export default function ConstructionTracker() {
           </DialogHeader>
           
           {selectedTank?.isGrouped && selectedTank.subTanks ? (
-            // If this is a grouped tank, show sub-tanks
-            <div className="grid gap-4 py-2">
+            // If this is a grouped tank, show sub-tanks horizontally instead of vertically
+            <div className="flex flex-row gap-4 py-2 overflow-x-auto">
               {selectedTank.subTanks.map((subTank, index) => (
-                <div key={subTank.id} className="border rounded-lg p-4 bg-gray-50">
+                <div key={subTank.id} className="border rounded-lg p-4 bg-gray-50 flex-1 min-w-[250px]">
                   <h3 className="font-semibold text-lg mb-2">{subTank.name}</h3>
                   <div className="grid gap-2">
                     {subTank.progress.map((stage, stageIndex) => {
