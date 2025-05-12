@@ -286,7 +286,7 @@ export default function ConstructionTracker() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", "manholes_progress.csv")
+    link.setAttribute("download", "WaterTankTracker.csv")
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -402,6 +402,17 @@ export default function ConstructionTracker() {
       // Update the sub-tank's progress
       const updatedProgress = [...subTank.progress]
 
+      // First, set all stages to "Not Started" or "Completed"
+      // This ensures no multiple "In Progress" tasks
+      updatedProgress.forEach((p, i) => {
+        if (p.status === "In Progress" && i !== stageIndex) {
+          updatedProgress[i] = {
+            ...updatedProgress[i],
+            status: i < stageIndex ? "Completed" : "Not Started",
+          }
+        }
+      })
+
       // Mark the current stage as completed
       updatedProgress[stageIndex] = {
         ...updatedProgress[stageIndex],
@@ -449,6 +460,17 @@ export default function ConstructionTracker() {
       // Regular tank handling
       // Update the tank's progress
       const updatedProgress = [...selectedTank.progress]
+
+      // First, set all stages to "Not Started" or "Completed"
+      // This ensures no multiple "In Progress" tasks
+      updatedProgress.forEach((p, i) => {
+        if (p.status === "In Progress" && i !== stageIndex) {
+          updatedProgress[i] = {
+            ...updatedProgress[i],
+            status: i < stageIndex ? "Completed" : "Not Started",
+          }
+        }
+      })
 
       // Mark the current stage as completed
       updatedProgress[stageIndex] = {
