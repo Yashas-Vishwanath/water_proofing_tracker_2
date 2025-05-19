@@ -318,8 +318,8 @@ export default function ConstructionTracker() {
         // Add the main tank
         const tankWithLevel = { ...tank, level };
         
-        // For grouped tanks, add each sub-tank as a separate entry
-        if (tank.type === "WATER TANKS" && tank.isGrouped && tank.subTanks) {
+        // Special handling ONLY for EB16-STE-089 tank
+        if (tank.id === "EB16-STE-089" && tank.subTanks) {
           // Add the parent tank first
           tanks.push({ ...tankWithLevel });
           
