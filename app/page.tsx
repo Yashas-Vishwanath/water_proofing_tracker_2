@@ -154,12 +154,8 @@ export default function ConstructionTracker() {
     const year = today.getFullYear();
     const formattedDate = `${day}-${month}-${year}`;
     
-    // Get all tanks data
-    const allTanks = [
-      ...Object.values(n00TanksData).map((tank) => ({ ...tank, level: "N00" })),
-      ...Object.values(n10TanksData).map((tank) => ({ ...tank, level: "N10" })),
-      ...Object.values(n20TanksData).map((tank) => ({ ...tank, level: "N20" })),
-    ]
+    // Get all tanks data using our getAllTanks helper
+    const allTanks = getAllTanks();
 
     // Since we're having issues with the Excel library, let's use a more reliable approach
     // We'll create an HTML table and open it in a new window for printing/saving
@@ -175,6 +171,7 @@ export default function ConstructionTracker() {
         tr:nth-child(even) { background-color: #f9f9f9; }
         .completed { background-color: #d4edda; }
         .in-progress { background-color: #fff3cd; }
+        .not-applicable { color: #aaa; font-style: italic; }
         .export-bar { 
           position: fixed; 
           top: 0; 
@@ -215,36 +212,74 @@ export default function ConstructionTracker() {
             <th>Level</th>
             <th>Type of Tank</th>
             <th>ID</th>
-  `
-
-    // Add headers for each progress stage
-    allProgressStages.forEach((stage) => {
-      tableHtml += `<th>${stage}</th>`
-    })
-
-    tableHtml += `
+            <th>Parent Tank</th>
+            <th>Formwork Removal</th>
+            <th>Repair and Cleaning</th>
+            <th>Pump Anchors</th>
+            <th>Slope</th>
+            <th>Dwall anchorage removal</th>
+            <th>Dwall anchorage waterproofing</th>
+            <th>Grout openings in wall</th>
+            <th>Inspection Stage 1</th>
+            <th>Waterproofing</th>
+            <th>Waterproofing of walls</th>
+            <th>Inspection Stage 2</th>
+            <th>Waterproofing of floor</th>
+            <th>Inspection Stage 3</th>
           </tr>
         </thead>
         <tbody>
-  `
-
-    // Add rows for each tank
-    allTanks.forEach((tank) => {
-      tableHtml += `<tr>
-      <td>${tank.level}</td>
-      <td>${tank.type}</td>
-      <td>${tank.id}</td>
     `
 
-      // Add cells for each progress stage
-      tank.progress.forEach((progress) => {
-        const cellClass =
-          progress.status === "Completed" ? "completed" : progress.status === "In Progress" ? "in-progress" : ""
-
-        tableHtml += `<td class="${cellClass}">${progress.status}</td>`
-      })
-
-      tableHtml += `</tr>`
+    // Add a row for each tank
+    allTanks.forEach((tank: any) => {
+      const tankId = tank.id;
+      const parentInfo = tank.isSubTank ? tank.parentName : "-";
+      
+      // Get all stage statuses
+      const formwork = getTankStageStatus(tank, "Formwork Removal");
+      const repair = getTankStageStatus(tank, "Repair and Cleaning");
+      const pump = getTankStageStatus(tank, "Pump Anchors");
+      const slope = getTankStageStatus(tank, "Slope");
+      const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
+      const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
+      const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
+      const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
+      const waterproofing = getTankStageStatus(tank, "Waterproofing");
+      const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
+      const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
+      const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
+      const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
+      
+      // Helper function to get cell styling based on status
+      const getCellClass = (result: { status: string, applicable: boolean }) => {
+        if (!result.applicable) return "class='not-applicable'";
+        if (result.status === "Completed") return "class='completed'";
+        if (result.status === "In Progress") return "class='in-progress'";
+        return "";
+      };
+      
+      tableHtml += `
+        <tr>
+          <td>${tank.level}</td>
+          <td>${tank.type}</td>
+          <td>${tankId}</td>
+          <td>${parentInfo}</td>
+          <td ${getCellClass(formwork)}>${formwork.status}</td>
+          <td ${getCellClass(repair)}>${repair.status}</td>
+          <td ${getCellClass(pump)}>${pump.status}</td>
+          <td ${getCellClass(slope)}>${slope.status}</td>
+          <td ${getCellClass(dwallRemoval)}>${dwallRemoval.status}</td>
+          <td ${getCellClass(dwallWaterproofing)}>${dwallWaterproofing.status}</td>
+          <td ${getCellClass(groutOpenings)}>${groutOpenings.status}</td>
+          <td ${getCellClass(inspection1)}>${inspection1.status}</td>
+          <td ${getCellClass(waterproofing)}>${waterproofing.status}</td>
+          <td ${getCellClass(waterproofingWalls)}>${waterproofingWalls.status}</td>
+          <td ${getCellClass(inspection2)}>${inspection2.status}</td>
+          <td ${getCellClass(waterproofingFloor)}>${waterproofingFloor.status}</td>
+          <td ${getCellClass(inspection3)}>${inspection3.status}</td>
+        </tr>
+      `
     })
 
     tableHtml += `
@@ -264,25 +299,7 @@ export default function ConstructionTracker() {
     }
   }
 
-  // Helper function to get stage status for a tank (handle both regular and custom stage configurations)
-  const getTankStageStatus = (tank: any, stageName: string) => {
-    // Find the stage in the tank's progress array
-    const stageProgress = tank.progress.find((p: any) => p.stage === stageName);
-    
-    if (stageProgress) {
-      return {
-        status: stageProgress.status,
-        applicable: true
-      };
-    }
-    
-    return {
-      status: "N/A",
-      applicable: false
-    };
-  };
-
-  // Get all tanks including sub-tanks
+  // Get all tanks including sub-tanks with proper parent references
   const getAllTanks = (): any[] => {
     const tanks: any[] = [];
     
@@ -293,19 +310,19 @@ export default function ConstructionTracker() {
         const tankWithLevel = { ...tank, level };
         
         // For grouped tanks, add each sub-tank as a separate entry
-        if (tank.type === "Grouped" && tank.subTanks) {
+        if (tank.type === "WATER TANKS" && tank.isGrouped && tank.subTanks) {
           // Add the parent tank first
           tanks.push({ ...tankWithLevel });
           
           // Then add each sub-tank as a separate entry with parent reference
-          Object.entries(tank.subTanks).forEach(([subId, subTank]: [string, any]) => {
+          tank.subTanks.forEach((subTank: any) => {
             tanks.push({
               ...subTank,
-              id: subId,
               parentId: tank.id,
               parentName: tank.name || tank.id,
               level,
-              isSubTank: true
+              isSubTank: true,
+              type: tank.type
             });
           });
         } else {
@@ -316,11 +333,70 @@ export default function ConstructionTracker() {
     };
     
     // Process all levels
-    processTanks(n00TanksData, "N00");
-    processTanks(n10TanksData, "N10");
-    processTanks(n20TanksData, "N20");
+    processTanks(n00Tanks, "N00");
+    processTanks(n10Tanks, "N10");
+    processTanks(n20Tanks, "N20");
     
     return tanks;
+  };
+  
+  // Helper function to get stage status for a tank (handle both regular and custom stage configurations)
+  const getTankStageStatus = (tank: any, stageName: string) => {
+    // Special case for EB16-STE-089 tanks
+    const isEB16Tank = tank.id === "EB16-STE-089" || 
+                       (tank.isSubTank && tank.parentId === "EB16-STE-089");
+    
+    // Special case for LARGE TANK-01 which has the custom stages
+    const isLargeTank01 = tank.isSubTank && 
+                          tank.parentId === "EB16-STE-089" && 
+                          tank.id === "EB16-STE-089-TANK-01";
+    
+    // Check if tank has this stage in its progress array
+    const stageProgress = tank.progress.find((p: any) => p.stage === stageName);
+    
+    // If stage exists in progress, return its status
+    if (stageProgress) {
+      return {
+        status: stageProgress.status,
+        applicable: true
+      };
+    }
+    
+    // Handle special cases
+    
+    // For the special middle stages that only apply to LARGE TANK-01
+    if ((stageName === "Dwall anchorage removal" || 
+         stageName === "Dwall anchorage waterproofing" || 
+         stageName === "Grout openings in wall") && !isLargeTank01) {
+      return {
+        status: "N/A",
+        applicable: false
+      };
+    }
+    
+    // For "Inspection Stage 3" which only applies to EB16-STE-089 tanks
+    if (stageName === "Inspection Stage 3" && !isEB16Tank) {
+      return {
+        status: "N/A",
+        applicable: false
+      };
+    }
+    
+    // For other tanks, the final stages are "Waterproofing" and "Inspection Stage 2"
+    // So "Waterproofing of walls", "Waterproofing of floor" should be N/A for non-EB16 tanks
+    if ((stageName === "Waterproofing of walls" || 
+         stageName === "Waterproofing of floor") && !isEB16Tank) {
+      return {
+        status: "N/A",
+        applicable: false
+      };
+    }
+    
+    // Default case for non-existing stages
+    return {
+      status: "Not Started",
+      applicable: true
+    };
   };
 
   // Add these helper functions for the CSV fallback
@@ -331,33 +407,25 @@ export default function ConstructionTracker() {
       "Level,Type of Tank,ID,Parent Tank,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Dwall anchorage removal,Dwall anchorage waterproofing,Grout openings in wall,Inspection Stage 1,Waterproofing,Waterproofing of walls,Inspection Stage 2,Waterproofing of floor,Inspection Stage 3\n"
 
     allTanks.forEach((tank: any) => {
-      const tankId = tank.isSubTank ? `${tank.parentId} | ${tank.id}` : tank.id;
-      const parentInfo = tank.isSubTank ? tank.parentName : "";
+      const tankId = tank.id;
+      const parentInfo = tank.isSubTank ? tank.parentName : "-";
       
       // Get status for each stage (or N/A if not applicable for this tank type)
-      const getStageStatus = (stageName: string) => {
-        const stageProgress = tank.progress.find((p: any) => p.stage === stageName);
-        if (stageProgress) {
-          return stageProgress.status;
-        }
-        return "N/A"; // Stage not applicable for this tank
-      };
+      const formwork = getTankStageStatus(tank, "Formwork Removal");
+      const repair = getTankStageStatus(tank, "Repair and Cleaning");
+      const pump = getTankStageStatus(tank, "Pump Anchors");
+      const slope = getTankStageStatus(tank, "Slope");
+      const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
+      const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
+      const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
+      const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
+      const waterproofing = getTankStageStatus(tank, "Waterproofing");
+      const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
+      const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
+      const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
+      const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
 
-      const formworkStatus = getStageStatus("Formwork Removal");
-      const repairStatus = getStageStatus("Repair and Cleaning");
-      const pumpStatus = getStageStatus("Pump Anchors");
-      const slopeStatus = getStageStatus("Slope");
-      const dwallRemovalStatus = getStageStatus("Dwall anchorage removal");
-      const dwallWaterproofingStatus = getStageStatus("Dwall anchorage waterproofing");
-      const groutOpeningsStatus = getStageStatus("Grout openings in wall");
-      const inspection1Status = getStageStatus("Inspection Stage 1");
-      const waterproofingStatus = getStageStatus("Waterproofing");
-      const waterproofingWallsStatus = getStageStatus("Waterproofing of walls");
-      const inspection2Status = getStageStatus("Inspection Stage 2");
-      const waterproofingFloorStatus = getStageStatus("Waterproofing of floor");
-      const inspection3Status = getStageStatus("Inspection Stage 3");
-
-      csvContent += `${tank.level},${tank.type},${tankId},${parentInfo},${formworkStatus},${repairStatus},${pumpStatus},${slopeStatus},${dwallRemovalStatus},${dwallWaterproofingStatus},${groutOpeningsStatus},${inspection1Status},${waterproofingStatus},${waterproofingWallsStatus},${inspection2Status},${waterproofingFloorStatus},${inspection3Status}\n`
+      csvContent += `${tank.level},${tank.type},${tankId},${parentInfo},${formwork.status},${repair.status},${pump.status},${slope.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
     });
 
     return csvContent;
@@ -1194,8 +1262,8 @@ export default function ConstructionTracker() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                   {getAllTanks().map((tank: any, i: number) => {
-                    const tankId = tank.isSubTank ? `${tank.parentId} | ${tank.id}` : tank.id;
-                    const parentInfo = tank.isSubTank ? tank.parentName : "";
+                    const tankId = tank.id;
+                    const parentInfo = tank.isSubTank ? tank.parentName : "-";
                     
                     // Get each stage status with applicable flag
                     const formwork = getTankStageStatus(tank, "Formwork Removal");
@@ -1212,25 +1280,37 @@ export default function ConstructionTracker() {
                     const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
                     const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
                     
+                    // Add colored cell styles based on status
+                    const getCellClass = (result: { status: string, applicable: boolean }) => {
+                      if (!result.applicable) return "px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic";
+                      
+                      if (result.status === "Completed") 
+                        return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-green-100 dark:bg-green-900 dark:text-green-200";
+                      else if (result.status === "In Progress") 
+                        return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200";
+                      
+                      return "px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400";
+                    };
+                    
                     return (
                       <tr key={i}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.level}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.type}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tankId}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{parentInfo}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formwork.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{repair.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{pump.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{slope.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{dwallRemoval.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{dwallWaterproofing.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{groutOpenings.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{inspection1.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{waterproofing.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{waterproofingWalls.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{inspection2.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{waterproofingFloor.status}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{inspection3.status}</td>
+                        <td className={getCellClass(formwork)}>{formwork.status}</td>
+                        <td className={getCellClass(repair)}>{repair.status}</td>
+                        <td className={getCellClass(pump)}>{pump.status}</td>
+                        <td className={getCellClass(slope)}>{slope.status}</td>
+                        <td className={getCellClass(dwallRemoval)}>{dwallRemoval.status}</td>
+                        <td className={getCellClass(dwallWaterproofing)}>{dwallWaterproofing.status}</td>
+                        <td className={getCellClass(groutOpenings)}>{groutOpenings.status}</td>
+                        <td className={getCellClass(inspection1)}>{inspection1.status}</td>
+                        <td className={getCellClass(waterproofing)}>{waterproofing.status}</td>
+                        <td className={getCellClass(waterproofingWalls)}>{waterproofingWalls.status}</td>
+                        <td className={getCellClass(inspection2)}>{inspection2.status}</td>
+                        <td className={getCellClass(waterproofingFloor)}>{waterproofingFloor.status}</td>
+                        <td className={getCellClass(inspection3)}>{inspection3.status}</td>
                       </tr>
                     )
                   })}
