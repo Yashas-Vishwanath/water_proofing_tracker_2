@@ -6,7 +6,13 @@ export type ProgressStage =
   | "Slope"
   | "Inspection Stage 1"
   | "Waterproofing"
+  | "Waterproofing of walls"
   | "Inspection Stage 2"
+  | "Waterproofing of floor"
+  | "Inspection Stage 3"
+  | "Dwall anchorage removal"
+  | "Dwall anchorage waterproofing"
+  | "Grout openings in wall"
 
 export type ProgressStatus = "Not Started" | "In Progress" | "Completed"
 
@@ -54,11 +60,17 @@ export type TasksData = {
 export const allProgressStages: ProgressStage[] = [
   "Formwork Removal",
   "Repair and Cleaning",
+  "Dwall anchorage removal",
+  "Dwall anchorage waterproofing",
+  "Grout openings in wall",
   "Pump Anchors",
   "Slope",
   "Inspection Stage 1",
   "Waterproofing",
+  "Waterproofing of walls",
   "Inspection Stage 2",
+  "Waterproofing of floor",
+  "Inspection Stage 3",
 ]
 
 // Update the tank data for N00 level with correct tank IDs and positions based on the new image
@@ -426,10 +438,15 @@ export const n10Tanks: Record<string, WaterTank> = {
     name: "WATER TANKS | EB16-STE-089",
     location: "Left Center",
     currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: "Not Started",
-    })),
+    progress: [
+      { stage: "Formwork Removal", status: "Not Started" },
+      { stage: "Repair and Cleaning", status: "Not Started" },
+      { stage: "Inspection Stage 1", status: "Not Started" },
+      { stage: "Waterproofing of walls", status: "Not Started" },
+      { stage: "Inspection Stage 2", status: "Not Started" },
+      { stage: "Waterproofing of floor", status: "Not Started" },
+      { stage: "Inspection Stage 3", status: "Not Started" }
+    ],
     coordinates: {
       top: 455,
       left: 280,
@@ -443,28 +460,46 @@ export const n10Tanks: Record<string, WaterTank> = {
         id: "EB16-STE-089-TANK-01",
         name: "LARGE TANK-01",
         currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
+        progress: [
+          { stage: "Formwork Removal", status: "In Progress" },
+          { stage: "Repair and Cleaning", status: "Not Started" },
+          { stage: "Dwall anchorage removal", status: "Not Started" },
+          { stage: "Dwall anchorage waterproofing", status: "Not Started" },
+          { stage: "Grout openings in wall", status: "Not Started" },
+          { stage: "Inspection Stage 1", status: "Not Started" },
+          { stage: "Waterproofing of walls", status: "Not Started" },
+          { stage: "Inspection Stage 2", status: "Not Started" },
+          { stage: "Waterproofing of floor", status: "Not Started" },
+          { stage: "Inspection Stage 3", status: "Not Started" }
+        ],
       },
       {
         id: "EB16-STE-089-TANK-02",
         name: "SMALL TANK-02",
         currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
+        progress: [
+          { stage: "Formwork Removal", status: "In Progress" },
+          { stage: "Repair and Cleaning", status: "Not Started" },
+          { stage: "Inspection Stage 1", status: "Not Started" },
+          { stage: "Waterproofing of walls", status: "Not Started" },
+          { stage: "Inspection Stage 2", status: "Not Started" },
+          { stage: "Waterproofing of floor", status: "Not Started" },
+          { stage: "Inspection Stage 3", status: "Not Started" }
+        ],
       },
       {
         id: "EB16-STE-089-TANK-03",
         name: "SMALL TANK-03",
         currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
+        progress: [
+          { stage: "Formwork Removal", status: "In Progress" },
+          { stage: "Repair and Cleaning", status: "Not Started" },
+          { stage: "Inspection Stage 1", status: "Not Started" },
+          { stage: "Waterproofing of walls", status: "Not Started" },
+          { stage: "Inspection Stage 2", status: "Not Started" },
+          { stage: "Waterproofing of floor", status: "Not Started" },
+          { stage: "Inspection Stage 3", status: "Not Started" }
+        ],
       }
     ]
   },

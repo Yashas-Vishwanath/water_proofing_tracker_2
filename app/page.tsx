@@ -129,7 +129,9 @@ export default function ConstructionTracker() {
     }
 
     // Check if in inspection stage
-    const isInspection = tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2"
+    const isInspection = tank.currentStage === "Inspection Stage 1" || 
+                          tank.currentStage === "Inspection Stage 2" || 
+                          tank.currentStage === "Inspection Stage 3"
     if (isInspection) {
       return "bg-purple-600" // Purple for inspection stages
     }
@@ -264,18 +266,24 @@ export default function ConstructionTracker() {
     ]
 
     let csvContent =
-      "Level,Type of Tank,ID,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Inspection Stage 1,Waterproofing,Inspection Stage 2\n"
+      "Level,Type of Tank,ID,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Dwall anchorage removal,Dwall anchorage waterproofing,Grout openings in wall,Inspection Stage 1,Waterproofing,Waterproofing of walls,Inspection Stage 2,Waterproofing of floor,Inspection Stage 3\n"
 
     allTanks.forEach((tank) => {
       const formworkStatus = tank.progress.find((p) => p.stage === "Formwork Removal")?.status || "Not Started"
       const repairStatus = tank.progress.find((p) => p.stage === "Repair and Cleaning")?.status || "Not Started"
       const pumpStatus = tank.progress.find((p) => p.stage === "Pump Anchors")?.status || "Not Started"
       const slopeStatus = tank.progress.find((p) => p.stage === "Slope")?.status || "Not Started"
+      const dwallRemovalStatus = tank.progress.find((p) => p.stage === "Dwall anchorage removal")?.status || "Not Started"
+      const dwallWaterproofingStatus = tank.progress.find((p) => p.stage === "Dwall anchorage waterproofing")?.status || "Not Started"
+      const groutOpeningsStatus = tank.progress.find((p) => p.stage === "Grout openings in wall")?.status || "Not Started"
       const inspection1Status = tank.progress.find((p) => p.stage === "Inspection Stage 1")?.status || "Not Started"
       const waterproofingStatus = tank.progress.find((p) => p.stage === "Waterproofing")?.status || "Not Started"
+      const waterproofingWallsStatus = tank.progress.find((p) => p.stage === "Waterproofing of walls")?.status || "Not Started"
       const inspection2Status = tank.progress.find((p) => p.stage === "Inspection Stage 2")?.status || "Not Started"
+      const waterproofingFloorStatus = tank.progress.find((p) => p.stage === "Waterproofing of floor")?.status || "Not Started"
+      const inspection3Status = tank.progress.find((p) => p.stage === "Inspection Stage 3")?.status || "Not Started"
 
-      csvContent += `${tank.level},${tank.type},${tank.id},${formworkStatus},${repairStatus},${pumpStatus},${slopeStatus},${inspection1Status},${waterproofingStatus},${inspection2Status}\n`
+      csvContent += `${tank.level},${tank.type},${tank.id},${formworkStatus},${repairStatus},${pumpStatus},${slopeStatus},${dwallRemovalStatus},${dwallWaterproofingStatus},${groutOpeningsStatus},${inspection1Status},${waterproofingStatus},${waterproofingWallsStatus},${inspection2Status},${waterproofingFloorStatus},${inspection3Status}\n`
     })
 
     return csvContent
@@ -306,17 +314,23 @@ export default function ConstructionTracker() {
     };
 
     const n00Ready = Object.values(n00TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
                 !isFullyCompleted(tank)
     );
 
     const n10Ready = Object.values(n10TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
                 !isFullyCompleted(tank)
     );
 
     const n20Ready = Object.values(n20TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || tank.currentStage === "Inspection Stage 2") && 
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
                 !isFullyCompleted(tank)
     );
 
