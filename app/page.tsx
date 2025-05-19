@@ -349,16 +349,62 @@ export default function ConstructionTracker() {
     return tanks;
   };
   
+  // Helper function to get stages that are applicable for a given tank type
+  const getApplicableStages = (tank: any): ProgressStage[] => {
+    // Special case for EB16-STE-089 tanks
+    if (tank.id === "EB16-STE-089" || (tank.isSubTank && tank.parentId === "EB16-STE-089")) {
+      // For LARGE TANK-01, include all special stages
+      if (tank.isSubTank && tank.id === "EB16-STE-089-TANK-01") {
+        return [
+          "Formwork Removal",
+          "Repair and Cleaning",
+          "Dwall anchorage removal",
+          "Dwall anchorage waterproofing",
+          "Grout openings in wall",
+          "Inspection Stage 1",
+          "Waterproofing of walls",
+          "Inspection Stage 2",
+          "Waterproofing of floor",
+          "Inspection Stage 3"
+        ] as ProgressStage[];
+      }
+      
+      // For other EB16-STE-089 tanks (parent tank and other sub-tanks)
+      return [
+        "Formwork Removal",
+        "Repair and Cleaning",
+        "Inspection Stage 1",
+        "Waterproofing of walls", 
+        "Inspection Stage 2",
+        "Waterproofing of floor",
+        "Inspection Stage 3"
+      ] as ProgressStage[];
+    }
+    
+    // For all other regular tanks that aren't EB16-STE-089
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Pump Anchors",
+      "Slope",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2"
+    ] as ProgressStage[];
+  };
+
   // Helper function to get stage status for a tank (handle both regular and custom stage configurations)
   const getTankStageStatus = (tank: any, stageName: string) => {
-    // Special case for EB16-STE-089 tanks
-    const isEB16Tank = tank.id === "EB16-STE-089" || 
-                       (tank.isSubTank && tank.parentId === "EB16-STE-089");
+    // Check if this stage is applicable for this tank type
+    const applicableStages = getApplicableStages(tank);
+    const isApplicable = applicableStages.includes(stageName as ProgressStage);
     
-    // Special case for LARGE TANK-01 which has the custom stages
-    const isLargeTank01 = tank.isSubTank && 
-                          tank.parentId === "EB16-STE-089" && 
-                          tank.id === "EB16-STE-089-TANK-01";
+    if (!isApplicable) {
+      return {
+        status: "N/A",
+        applicable: false
+      };
+    }
     
     // Check if tank has this stage in its progress array
     const stageProgress = tank.progress.find((p: any) => p.stage === stageName);
@@ -371,45 +417,7 @@ export default function ConstructionTracker() {
       };
     }
     
-    // Handle special cases
-    
-    // For the special middle stages that only apply to LARGE TANK-01
-    if ((stageName === "Dwall anchorage removal" || 
-         stageName === "Dwall anchorage waterproofing" || 
-         stageName === "Grout openings in wall") && !isLargeTank01) {
-      return {
-        status: "N/A",
-        applicable: false
-      };
-    }
-    
-    // For "Inspection Stage 3" which only applies to EB16-STE-089 tanks
-    if (stageName === "Inspection Stage 3" && !isEB16Tank) {
-      return {
-        status: "N/A",
-        applicable: false
-      };
-    }
-    
-    // For other tanks, the final stages are "Waterproofing" and "Inspection Stage 2"
-    // So "Waterproofing of walls", "Waterproofing of floor" should be N/A for non-EB16 tanks
-    if ((stageName === "Waterproofing of walls" || 
-         stageName === "Waterproofing of floor") && !isEB16Tank) {
-      return {
-        status: "N/A",
-        applicable: false
-      };
-    }
-    
-    // For "Pump Anchors" and "Slope" which don't apply to EB16-STE-089 tanks
-    if ((stageName === "Pump Anchors" || stageName === "Slope") && isEB16Tank) {
-      return {
-        status: "N/A",
-        applicable: false
-      };
-    }
-    
-    // Default case for non-existing stages
+    // If the stage is applicable but not in progress, return Not Started
     return {
       status: "Not Started",
       applicable: true
@@ -1083,64 +1091,81 @@ export default function ConstructionTracker() {
           {selectedTank?.isGrouped && selectedTank.subTanks ? (
             // If this is a grouped tank, show sub-tanks horizontally instead of vertically
             <div className="flex flex-row gap-4 py-2 overflow-x-auto">
-              {selectedTank.subTanks.map((subTank, index) => (
-                <div key={subTank.id} className="border rounded-lg p-4 bg-gray-50 flex-1 min-w-[250px]">
-                  <h3 className="font-semibold text-lg mb-2">{subTank.name}</h3>
-                  <div className="grid gap-2">
-                    {subTank.progress.map((stage, stageIndex) => {
-                      // Determine if this is the current ongoing task
-                      const isCurrentTask = stage.status === "In Progress";
-                      
-                      return (
-                        <div
-                          key={`${subTank.id}-${stage.stage}`}
-                          className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
-                          onClick={() => {
-                            // Create a temporary copy of the selected tank with this sub-tank's progress
-                            const tempSelectedTank = {
-                              ...selectedTank,
-                              currentSubTankIndex: index,
-                              progress: subTank.progress
-                            };
-                            setSelectedTank(tempSelectedTank);
-                            toggleTaskCompletion(stage.stage);
-                          }}
-                        >
+              {selectedTank.subTanks.map((subTank, index) => {
+                // Get applicable stages for this sub-tank
+                const applicableStages = getApplicableStages({
+                  ...subTank, 
+                  isSubTank: true, 
+                  parentId: selectedTank.id
+                });
+                
+                // Filter progress to only show applicable stages
+                const filteredProgress = subTank.progress
+                  .filter(stage => applicableStages.includes(stage.stage));
+                
+                return (
+                  <div key={subTank.id} className="border rounded-lg p-4 bg-gray-50 flex-1 min-w-[250px]">
+                    <h3 className="font-semibold text-lg mb-2">{subTank.name}</h3>
+                    <div className="grid gap-2">
+                      {filteredProgress.map((stage, stageIndex) => {
+                        // Determine if this is the current ongoing task
+                        const isCurrentTask = stage.status === "In Progress";
+                        
+                        return (
                           <div
-                            className={`w-6 h-6 border rounded-md flex items-center justify-center ${
-                              stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"
-                            }`}
+                            key={`${subTank.id}-${stage.stage}`}
+                            className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
+                            onClick={() => {
+                              // Create a temporary copy of the selected tank with this sub-tank's progress
+                              const tempSelectedTank = {
+                                ...selectedTank,
+                                currentSubTankIndex: index,
+                                progress: subTank.progress
+                              };
+                              setSelectedTank(tempSelectedTank);
+                              toggleTaskCompletion(stage.stage);
+                            }}
                           >
-                            {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+                            <div
+                              className={`w-6 h-6 border rounded-md flex items-center justify-center ${
+                                stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"
+                              }`}
+                            >
+                              {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+                            </div>
+                            <div className="flex-1">{stage.stage}</div>
+                            {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
                           </div>
-                          <div className="flex-1">{stage.stage}</div>
-                          {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             // Regular non-grouped tank
             <div className="grid gap-2 py-4">
-              {selectedTank?.progress.map((stage, index) => {
+              {selectedTank && getApplicableStages(selectedTank).map((stage) => {
+                // Find this stage in the progress array
+                const progressStage = selectedTank.progress.find(p => p.stage === stage);
+                const status = progressStage ? progressStage.status : "Not Started";
+                
                 // Determine if this is the current ongoing task
-                const isCurrentTask = stage.status === "In Progress"
+                const isCurrentTask = status === "In Progress";
 
                 return (
                   <div
-                    key={stage.stage}
+                    key={stage}
                     className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
-                    onClick={() => toggleTaskCompletion(stage.stage)}
+                    onClick={() => toggleTaskCompletion(stage)}
                   >
                     <div
-                      className={`w-6 h-6 border rounded-md flex items-center justify-center ${stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"}`}
+                      className={`w-6 h-6 border rounded-md flex items-center justify-center ${status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"}`}
                     >
-                      {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
+                      {status === "Completed" && <Check className="h-4 w-4 text-white" />}
                     </div>
-                    <div className="flex-1">{stage.stage}</div>
+                    <div className="flex-1">{stage}</div>
                     {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
                   </div>
                 )
