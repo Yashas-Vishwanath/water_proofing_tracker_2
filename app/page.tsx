@@ -167,7 +167,7 @@ export default function ConstructionTracker() {
         body { font-family: Arial, sans-serif; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; position: sticky; top: 0; }
+        th { background-color: #f2f2f2; position: sticky; top: 0; z-index: 10; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         .completed { background-color: #d4edda; }
         .in-progress { background-color: #fff3cd; }
@@ -181,6 +181,7 @@ export default function ConstructionTracker() {
           color: white; 
           padding: 10px; 
           text-align: center;
+          z-index: 20;
         }
         .export-bar button {
           background: #4CAF50;
@@ -195,8 +196,14 @@ export default function ConstructionTracker() {
           cursor: pointer;
           border-radius: 4px;
         }
+        .table-container {
+          overflow: auto;
+          max-height: 85vh;
+          margin-top: 50px;
+        }
         @media print {
           .export-bar { display: none; }
+          .table-container { margin-top: 0; max-height: none; overflow: visible; }
         }
       </style>
     </head>
@@ -206,29 +213,30 @@ export default function ConstructionTracker() {
         <button onclick="window.close()">Close</button>
       </div>
       <h1>Water Tanks Progress Report - ${formattedDate}</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Level</th>
-            <th>Type of Tank</th>
-            <th>ID</th>
-            <th>Parent Tank</th>
-            <th>Formwork Removal</th>
-            <th>Repair and Cleaning</th>
-            <th>Pump Anchors</th>
-            <th>Slope</th>
-            <th>Dwall anchorage removal</th>
-            <th>Dwall anchorage waterproofing</th>
-            <th>Grout openings in wall</th>
-            <th>Inspection Stage 1</th>
-            <th>Waterproofing</th>
-            <th>Waterproofing of walls</th>
-            <th>Inspection Stage 2</th>
-            <th>Waterproofing of floor</th>
-            <th>Inspection Stage 3</th>
-          </tr>
-        </thead>
-        <tbody>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Type of Tank</th>
+              <th>Parent Tank</th>
+              <th>ID</th>
+              <th>Formwork Removal</th>
+              <th>Repair and Cleaning</th>
+              <th>Pump Anchors</th>
+              <th>Slope</th>
+              <th>Dwall anchorage removal</th>
+              <th>Dwall anchorage waterproofing</th>
+              <th>Grout openings in wall</th>
+              <th>Inspection Stage 1</th>
+              <th>Waterproofing</th>
+              <th>Waterproofing of walls</th>
+              <th>Inspection Stage 2</th>
+              <th>Waterproofing of floor</th>
+              <th>Inspection Stage 3</th>
+            </tr>
+          </thead>
+          <tbody>
     `
 
     // Add a row for each tank
@@ -263,8 +271,8 @@ export default function ConstructionTracker() {
         <tr>
           <td>${tank.level}</td>
           <td>${tank.type}</td>
-          <td>${tankId}</td>
           <td>${parentInfo}</td>
+          <td>${tankId}</td>
           <td ${getCellClass(formwork)}>${formwork.status}</td>
           <td ${getCellClass(repair)}>${repair.status}</td>
           <td ${getCellClass(pump)}>${pump.status}</td>
@@ -285,6 +293,7 @@ export default function ConstructionTracker() {
     tableHtml += `
         </tbody>
       </table>
+    </div>
     </body>
     </html>
   `
@@ -332,10 +341,10 @@ export default function ConstructionTracker() {
       });
     };
     
-    // Process all levels
-    processTanks(n00Tanks, "N00");
-    processTanks(n10Tanks, "N10");
-    processTanks(n20Tanks, "N20");
+    // Process all levels using the CURRENT state data
+    processTanks(n00TanksData, "N00");
+    processTanks(n10TanksData, "N10");
+    processTanks(n20TanksData, "N20");
     
     return tanks;
   };
@@ -392,6 +401,14 @@ export default function ConstructionTracker() {
       };
     }
     
+    // For "Pump Anchors" and "Slope" which don't apply to EB16-STE-089 tanks
+    if ((stageName === "Pump Anchors" || stageName === "Slope") && isEB16Tank) {
+      return {
+        status: "N/A",
+        applicable: false
+      };
+    }
+    
     // Default case for non-existing stages
     return {
       status: "Not Started",
@@ -404,7 +421,7 @@ export default function ConstructionTracker() {
     const allTanks: any[] = getAllTanks();
 
     let csvContent =
-      "Level,Type of Tank,ID,Parent Tank,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Dwall anchorage removal,Dwall anchorage waterproofing,Grout openings in wall,Inspection Stage 1,Waterproofing,Waterproofing of walls,Inspection Stage 2,Waterproofing of floor,Inspection Stage 3\n"
+      "Level,Type of Tank,Parent Tank,ID,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Dwall anchorage removal,Dwall anchorage waterproofing,Grout openings in wall,Inspection Stage 1,Waterproofing,Waterproofing of walls,Inspection Stage 2,Waterproofing of floor,Inspection Stage 3\n"
 
     allTanks.forEach((tank: any) => {
       const tankId = tank.id;
@@ -425,7 +442,7 @@ export default function ConstructionTracker() {
       const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
       const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
 
-      csvContent += `${tank.level},${tank.type},${tankId},${parentInfo},${formwork.status},${repair.status},${pump.status},${slope.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
+      csvContent += `${tank.level},${tank.type},${parentInfo},${tankId},${formwork.status},${repair.status},${pump.status},${slope.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
     });
 
     return csvContent;
@@ -1236,87 +1253,85 @@ export default function ConstructionTracker() {
               This view allows you to see all tasks in a spreadsheet format.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 overflow-auto max-h-[70vh]">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Tank</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formwork Removal</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repair and Cleaning</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pump Anchors</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slope</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage removal</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage waterproofing</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grout openings in wall</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 1</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of walls</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 2</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of floor</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 3</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {getAllTanks().map((tank: any, i: number) => {
-                    const tankId = tank.id;
-                    const parentInfo = tank.isSubTank ? tank.parentName : "-";
+          <div className="overflow-auto max-h-[70vh] max-w-full">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Tank</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formwork Removal</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repair and Cleaning</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pump Anchors</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slope</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage removal</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage waterproofing</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grout openings in wall</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 1</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of walls</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 2</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of floor</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 3</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
+                {getAllTanks().map((tank: any, i: number) => {
+                  const tankId = tank.id;
+                  const parentInfo = tank.isSubTank ? tank.parentName : "-";
+                  
+                  // Get each stage status with applicable flag
+                  const formwork = getTankStageStatus(tank, "Formwork Removal");
+                  const repair = getTankStageStatus(tank, "Repair and Cleaning");
+                  const pump = getTankStageStatus(tank, "Pump Anchors");
+                  const slope = getTankStageStatus(tank, "Slope");
+                  const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
+                  const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
+                  const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
+                  const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
+                  const waterproofing = getTankStageStatus(tank, "Waterproofing");
+                  const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
+                  const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
+                  const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
+                  const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
+                  
+                  // Add colored cell styles based on status
+                  const getCellClass = (result: { status: string, applicable: boolean }) => {
+                    if (!result.applicable) return "px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic";
                     
-                    // Get each stage status with applicable flag
-                    const formwork = getTankStageStatus(tank, "Formwork Removal");
-                    const repair = getTankStageStatus(tank, "Repair and Cleaning");
-                    const pump = getTankStageStatus(tank, "Pump Anchors");
-                    const slope = getTankStageStatus(tank, "Slope");
-                    const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
-                    const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
-                    const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
-                    const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
-                    const waterproofing = getTankStageStatus(tank, "Waterproofing");
-                    const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
-                    const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
-                    const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
-                    const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
+                    if (result.status === "Completed") 
+                      return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-green-100 dark:bg-green-900 dark:text-green-200";
+                    else if (result.status === "In Progress") 
+                      return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200";
                     
-                    // Add colored cell styles based on status
-                    const getCellClass = (result: { status: string, applicable: boolean }) => {
-                      if (!result.applicable) return "px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic";
-                      
-                      if (result.status === "Completed") 
-                        return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-green-100 dark:bg-green-900 dark:text-green-200";
-                      else if (result.status === "In Progress") 
-                        return "px-6 py-4 whitespace-nowrap text-sm text-gray-800 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200";
-                      
-                      return "px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400";
-                    };
-                    
-                    return (
-                      <tr key={i}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.level}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tankId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{parentInfo}</td>
-                        <td className={getCellClass(formwork)}>{formwork.status}</td>
-                        <td className={getCellClass(repair)}>{repair.status}</td>
-                        <td className={getCellClass(pump)}>{pump.status}</td>
-                        <td className={getCellClass(slope)}>{slope.status}</td>
-                        <td className={getCellClass(dwallRemoval)}>{dwallRemoval.status}</td>
-                        <td className={getCellClass(dwallWaterproofing)}>{dwallWaterproofing.status}</td>
-                        <td className={getCellClass(groutOpenings)}>{groutOpenings.status}</td>
-                        <td className={getCellClass(inspection1)}>{inspection1.status}</td>
-                        <td className={getCellClass(waterproofing)}>{waterproofing.status}</td>
-                        <td className={getCellClass(waterproofingWalls)}>{waterproofingWalls.status}</td>
-                        <td className={getCellClass(inspection2)}>{inspection2.status}</td>
-                        <td className={getCellClass(waterproofingFloor)}>{waterproofingFloor.status}</td>
-                        <td className={getCellClass(inspection3)}>{inspection3.status}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    return "px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400";
+                  };
+                  
+                  return (
+                    <tr key={i}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.level}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tank.type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{parentInfo}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tankId}</td>
+                      <td className={getCellClass(formwork)}>{formwork.status}</td>
+                      <td className={getCellClass(repair)}>{repair.status}</td>
+                      <td className={getCellClass(pump)}>{pump.status}</td>
+                      <td className={getCellClass(slope)}>{slope.status}</td>
+                      <td className={getCellClass(dwallRemoval)}>{dwallRemoval.status}</td>
+                      <td className={getCellClass(dwallWaterproofing)}>{dwallWaterproofing.status}</td>
+                      <td className={getCellClass(groutOpenings)}>{groutOpenings.status}</td>
+                      <td className={getCellClass(inspection1)}>{inspection1.status}</td>
+                      <td className={getCellClass(waterproofing)}>{waterproofing.status}</td>
+                      <td className={getCellClass(waterproofingWalls)}>{waterproofingWalls.status}</td>
+                      <td className={getCellClass(inspection2)}>{inspection2.status}</td>
+                      <td className={getCellClass(waterproofingFloor)}>{waterproofingFloor.status}</td>
+                      <td className={getCellClass(inspection3)}>{inspection3.status}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setIsSpreadsheetDialogOpen(false)}>
