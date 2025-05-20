@@ -69,37 +69,80 @@ export default function ConstructionTracker() {
 
   // Load tank data from the API when the component mounts
   useEffect(() => {
-    async function fetchTasksData() {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/tasks')
-        
-        if (response.ok) {
-          const data = await response.json()
-          // Update state with data from API
-          if (data.n00Tanks && Object.keys(data.n00Tanks).length > 0) setN00TanksData(data.n00Tanks)
-          if (data.n10Tanks && Object.keys(data.n10Tanks).length > 0) setN10TanksData(data.n10Tanks)
-          if (data.n20Tanks && Object.keys(data.n20Tanks).length > 0) setN20TanksData(data.n20Tanks)
-        } else {
-          console.log("API returned non-OK status, initializing with default data")
-          // If API fails, initialize with default data and save it to the API
-          setInitializing(true)
-          await saveTanksData()
-          setInitializing(false)
-        }
-      } catch (error) {
-        console.error("Error fetching tasks data:", error)
-        // On error, initialize with default data and save it to the API
-        setInitializing(true)
-        await saveTanksData()
-        setInitializing(false)
-      } finally {
-        setLoading(false)
-      }
-    }
+    fetchTanksData();
+  }, []);
 
-    fetchTasksData()
-  }, [])
+  // Function to fetch tanks data
+  const fetchTanksData = async () => {
+    try {
+      // Attempt to fetch data from API
+      const [n00Response, n10Response, n20Response] = await Promise.all([
+        fetch('/api/tasks/n00Tanks'),
+        fetch('/api/tasks/n10Tanks'),
+        fetch('/api/tasks/n20Tanks')
+      ]);
+      
+      let n00Data = await n00Response.json();
+      let n10Data = await n10Response.json();
+      let n20Data = await n20Response.json();
+      
+      // Handle hardcoding of completed stages for non-EB16-STE-089 grouped tanks
+      // This ensures that even on page refresh, the tanks are marked as completed
+      const hardcodeCompletedStages = (tanksData: Record<string, WaterTank>) => {
+        return Object.entries(tanksData).reduce((acc, [id, tank]) => {
+          // Special case for grouped tanks except EB16-STE-089
+          if (tank.isGrouped && tank.subTanks && id !== "EB16-STE-089") {
+            // Get applicable stages for this tank type
+            const applicableStages = getApplicableStages(tank);
+            const lastStage = applicableStages[applicableStages.length - 1];
+            
+            // Mark all progress stages as completed
+            const completedProgress = applicableStages.map(stage => ({
+              stage,
+              status: "Completed" as ProgressStatus
+            }));
+            
+            // Update the sub-tanks' progress and currentStage
+            const updatedSubTanks = tank.subTanks.map(subTank => ({
+              ...subTank,
+              progress: [...completedProgress],
+              currentStage: lastStage
+            }));
+            
+            // Return the tank with updated sub-tanks and currentStage
+            return { 
+              ...acc, 
+              [id]: {
+                ...tank, 
+                subTanks: updatedSubTanks,
+                currentStage: lastStage,
+                progress: completedProgress
+              } 
+            };
+          }
+          
+          return { ...acc, [id]: tank };
+        }, {} as Record<string, WaterTank>);
+      };
+      
+      // Apply hardcoding to all tank levels
+      n00Data = hardcodeCompletedStages(n00Data);
+      n10Data = hardcodeCompletedStages(n10Data);
+      n20Data = hardcodeCompletedStages(n20Data);
+      
+      // Set the data in state
+      setN00TanksData(n00Data);
+      setN10TanksData(n10Data);
+      setN20TanksData(n20Data);
+      
+    } catch (error) {
+      console.error("Error fetching tanks data:", error);
+      // Fallback to initial data
+      setN00TanksData(n00Tanks);
+      setN10TanksData(n10Tanks);
+      setN20TanksData(n20Tanks);
+    }
+  };
 
   // Function to save all tanks data to the API
   const saveTanksData = async () => {
@@ -559,41 +602,40 @@ export default function ConstructionTracker() {
     setIsInspectionDialogOpen(true)
   }
 
-  // Add a function to get all manholes that are ready for inspection
+  // Function to get tanks ready for inspection
   const getTanksReadyForInspection = () => {
-    // Helper function to check if all stages are completed
-    const isFullyCompleted = (tank: WaterTank) => {
-      return tank.progress.every(p => p.status === "Completed");
+    const readyTanks: { id: string; name: string; currentStage: string; level: string }[] = [];
+    
+    // Helper function to check if a tank is in inspection stage and add it to the list
+    const checkTankForInspection = (tank: WaterTank, level: string) => {
+      // Skip non-EB16-STE-089 grouped tanks (they're all marked as completed already)
+      if (tank.isGrouped && tank.subTanks && tank.id !== "EB16-STE-089") {
+        return;
+      }
+      
+      const isInspectionStage = tank.currentStage?.includes("Inspection Stage");
+      if (isInspectionStage) {
+        readyTanks.push({
+          id: tank.id,
+          name: tank.name || tank.id,
+          currentStage: tank.currentStage,
+          level
+        });
+      }
     };
-
-    const n00Ready = Object.values(n00TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
-    );
-
-    const n10Ready = Object.values(n10TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
-    );
-
-    const n20Ready = Object.values(n20TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
-    );
-
+    
+    // Process tanks from all levels
+    Object.values(n00TanksData).forEach(tank => checkTankForInspection(tank, "N00"));
+    Object.values(n10TanksData).forEach(tank => checkTankForInspection(tank, "N10"));
+    Object.values(n20TanksData).forEach(tank => checkTankForInspection(tank, "N20"));
+    
     return {
-      n00: n00Ready,
-      n10: n10Ready,
-      n20: n20Ready,
-      n30: [], // No tanks in N30 yet
-    }
-  }
+      n00: readyTanks.filter(tank => tank.level === "N00"),
+      n10: readyTanks.filter(tank => tank.level === "N10"),
+      n20: readyTanks.filter(tank => tank.level === "N20"),
+      n30: [] // No tanks in N30 yet
+    };
+  };
 
   // Function to handle tank click
   const handleTankClick = (tankId: string) => {
