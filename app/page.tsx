@@ -124,23 +124,29 @@ export default function ConstructionTracker() {
   const getTankColor = (tank: WaterTank) => {
     // Special handling for grouped tanks with sub-tanks
     if (tank.isGrouped && tank.subTanks) {
-      // Check if all sub-tanks are fully completed
-      const allSubTanksCompleted = tank.subTanks.every(subTank => {
-        const applicableStages = getApplicableStages({
-          ...subTank,
-          isSubTank: true,
-          parentId: tank.id
+      // EB16-STE-089 tanks should use their actual status
+      if (tank.id === "EB16-STE-089") {
+        // Check if all sub-tanks are fully completed
+        const allSubTanksCompleted = tank.subTanks.every(subTank => {
+          const applicableStages = getApplicableStages({
+            ...subTank,
+            isSubTank: true,
+            parentId: tank.id
+          });
+          
+          // For each sub-tank, ensure all applicable stages are completed
+          return applicableStages.every(stage => {
+            const stageProgress = subTank.progress.find(p => p.stage === stage);
+            return stageProgress && stageProgress.status === "Completed";
+          });
         });
         
-        // For each sub-tank, ensure all applicable stages are completed
-        return applicableStages.every(stage => {
-          const stageProgress = subTank.progress.find(p => p.stage === stage);
-          return stageProgress && stageProgress.status === "Completed";
-        });
-      });
-      
-      if (allSubTanksCompleted) {
-        return "bg-green-600"; // Green for completed tanks
+        if (allSubTanksCompleted) {
+          return "bg-green-600"; // Green for completed tanks
+        }
+      } else {
+        // For all other tanks with sub-tanks, hardcode them as completed (green)
+        return "bg-green-600";
       }
     } else {
       // Check if all tasks are completed for regular tanks
@@ -354,18 +360,40 @@ export default function ConstructionTracker() {
     // Process a level's tanks and add them to the result array
     const processTanks = (levelTanks: Record<string, any>, level: string) => {
       Object.values(levelTanks).forEach(tank => {
-        // Add the main tank
-        const tankWithLevel = { ...tank, level };
-        
-        // Special handling ONLY for EB16-STE-089 tank
-        if (tank.id === "EB16-STE-089" && tank.subTanks) {
+        // For tanks with sub-tanks
+        if (tank.isGrouped && tank.subTanks) {
           // Add the parent tank first
-          tanks.push({ ...tankWithLevel });
+          tanks.push({ ...tank, level });
           
           // Then add each sub-tank as a separate entry with parent reference
           tank.subTanks.forEach((subTank: any) => {
+            // Make a copy of the sub-tank to avoid modifying the original
+            const subTankCopy = { ...subTank };
+            
+            // If this is NOT an EB16-STE-089 sub-tank, mark all stages as completed
+            if (tank.id !== "EB16-STE-089") {
+              // Get applicable stages for this sub-tank
+              const applicableStages = getApplicableStages({
+                ...subTankCopy,
+                isSubTank: true,
+                parentId: tank.id
+              });
+              
+              // Mark all stages as completed
+              subTankCopy.progress = applicableStages.map(stage => ({
+                stage,
+                status: "Completed" as ProgressStatus
+              }));
+              
+              // Update the current stage to the last applicable stage
+              if (applicableStages.length > 0) {
+                subTankCopy.currentStage = applicableStages[applicableStages.length - 1];
+              }
+            }
+            
+            // Add the sub-tank to the list
             tanks.push({
-              ...subTank,
+              ...subTankCopy,
               parentId: tank.id,
               parentName: tank.name || tank.id,
               level,
@@ -375,7 +403,7 @@ export default function ConstructionTracker() {
           });
         } else {
           // Normal tank, just add it
-          tanks.push(tankWithLevel);
+          tanks.push({ ...tank, level });
         }
       });
     };
