@@ -420,7 +420,20 @@ export default function ConstructionTracker() {
       ] as ProgressStage[];
     }
     
-    // For all other regular tanks that aren't EB16-STE-089
+    // Special case for EB1-EXTERIOR tanks and its sub-tanks
+    if (tank.id === "EB1-EXTERIOR" || (tank.isSubTank && tank.parentId === "EB1-EXTERIOR")) {
+      return [
+        "Formwork Removal",
+        "Repair and Cleaning",
+        "Pump Anchors",
+        "Slope",
+        "Inspection Stage 1",
+        "Waterproofing",
+        "Inspection Stage 2"
+      ] as ProgressStage[];
+    }
+    
+    // For all other regular tanks
     return [
       "Formwork Removal",
       "Repair and Cleaning",
