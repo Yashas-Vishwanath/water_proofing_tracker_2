@@ -122,22 +122,61 @@ export default function ConstructionTracker() {
 
   // Function to get tank color based on status
   const getTankColor = (tank: WaterTank) => {
-    // Check if all tasks are completed
-    const allCompleted = tank.progress.every((p) => p.status === "Completed")
-    if (allCompleted) {
-      return "bg-green-600" // Green for completed tanks
+    // Special handling for grouped tanks with sub-tanks
+    if (tank.isGrouped && tank.subTanks) {
+      // Check if all sub-tanks are fully completed
+      const allSubTanksCompleted = tank.subTanks.every(subTank => {
+        const applicableStages = getApplicableStages({
+          ...subTank,
+          isSubTank: true,
+          parentId: tank.id
+        });
+        
+        // For each sub-tank, ensure all applicable stages are completed
+        return applicableStages.every(stage => {
+          const stageProgress = subTank.progress.find(p => p.stage === stage);
+          return stageProgress && stageProgress.status === "Completed";
+        });
+      });
+      
+      if (allSubTanksCompleted) {
+        return "bg-green-600"; // Green for completed tanks
+      }
+    } else {
+      // Check if all tasks are completed for regular tanks
+      const applicableStages = getApplicableStages(tank);
+      const allCompleted = applicableStages.every(stage => {
+        const progressStage = tank.progress.find(p => p.stage === stage);
+        return progressStage && progressStage.status === "Completed";
+      });
+      
+      if (allCompleted) {
+        return "bg-green-600"; // Green for completed tanks
+      }
     }
 
     // Check if in inspection stage
     const isInspection = tank.currentStage === "Inspection Stage 1" || 
-                          tank.currentStage === "Inspection Stage 2" || 
-                          tank.currentStage === "Inspection Stage 3"
+                         tank.currentStage === "Inspection Stage 2" || 
+                         tank.currentStage === "Inspection Stage 3";
+    
     if (isInspection) {
-      return "bg-purple-600" // Purple for inspection stages
+      // Double-check if the tank is actually fully completed despite being in inspection stage
+      const applicableStages = getApplicableStages(tank);
+      const allCompleted = applicableStages.every(stage => {
+        const progressStage = tank.progress.find(p => p.stage === stage);
+        return progressStage && progressStage.status === "Completed";
+      });
+      
+      if (allCompleted) {
+        return "bg-green-600"; // Green for completed tanks even if currentStage is an inspection stage
+      }
+      
+      return "bg-purple-600"; // Purple for inspection stages
     }
 
     // Default is red for ongoing operations
-    return "bg-red-600"
+    return "bg-red-600";
   }
 
   // Function to handle exporting to spreadsheet
