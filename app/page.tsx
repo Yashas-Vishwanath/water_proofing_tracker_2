@@ -634,6 +634,9 @@ export default function ConstructionTracker() {
           
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
+          
+          // Mirror the active sub-tank's currentStage to the parent
+          updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         } else {
           // This was the last stage, just mark it as completed
           // Create a copy of the sub-tanks array
@@ -647,6 +650,9 @@ export default function ConstructionTracker() {
           
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
+          
+          // Mirror the active sub-tank's currentStage to the parent
+          updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         }
         
         // Update the selected tank in state to see changes immediately
@@ -784,6 +790,9 @@ export default function ConstructionTracker() {
           
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
+          
+          // Mirror the active sub-tank's currentStage to the parent
+          updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
           
           // Update the selected tank in state to see changes immediately
           setSelectedTank(updatedTank);
