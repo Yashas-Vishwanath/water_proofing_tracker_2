@@ -536,6 +536,37 @@ export default function ConstructionTracker() {
   // Function to toggle task completion
   const toggleTaskCompletion = (stage: ProgressStage) => {
     if (!selectedTank) return;
+    
+    // Check if the stage is already completed - if so, show confirmation dialog
+    let isCompleted = false;
+    
+    if (selectedTank.currentSubTankIndex !== undefined && selectedTank.isGrouped && selectedTank.subTanks) {
+      // For sub-tanks, check completion status in the sub-tank's progress
+      const subTank = selectedTank.subTanks[selectedTank.currentSubTankIndex];
+      if (subTank) {
+        const stageProgress = subTank.progress.find(p => p.stage === stage);
+        isCompleted = stageProgress?.status === "Completed";
+      }
+    } else {
+      // For regular tanks, check in the tank's progress
+      const stageProgress = selectedTank.progress.find(p => p.stage === stage);
+      isCompleted = stageProgress?.status === "Completed";
+    }
+    
+    // If stage is completed, show confirmation dialog for undo
+    if (isCompleted) {
+      setStageToUndo(stage);
+      setConfirmDialogOpen(true);
+      return;
+    }
+    
+    // Otherwise proceed with marking as completed
+    markTaskAsCompleted(stage);
+  }
+
+  // Function to mark a task as completed
+  const markTaskAsCompleted = (stage: ProgressStage) => {
+    if (!selectedTank) return;
 
     // Clone the selected tank to avoid modifying state directly
     const updatedTank = { ...selectedTank } as ExtendedWaterTank;
@@ -618,11 +649,13 @@ export default function ConstructionTracker() {
           updatedTank.subTanks = updatedSubTanks;
         }
         
+        // Update the selected tank in state to see changes immediately
+        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
     } else {
-      // Regular non-grouped tank logic (existing implementation)
+      // Regular non-grouped tank logic
       // Find the stage in the progress array
       const stageIndex = updatedTank.progress.findIndex(p => p.stage === stage);
       
@@ -670,6 +703,8 @@ export default function ConstructionTracker() {
           updatedTank.currentStage = stage;
         }
         
+        // Update the selected tank in state to see changes immediately
+        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
@@ -750,6 +785,8 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
+          // Update the selected tank in state to see changes immediately
+          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
@@ -800,6 +837,8 @@ export default function ConstructionTracker() {
           updatedTank.progress = updatedProgress;
           updatedTank.currentStage = newCurrentStage;
           
+          // Update the selected tank in state to see changes immediately
+          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
