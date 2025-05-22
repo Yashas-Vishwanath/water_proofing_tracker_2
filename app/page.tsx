@@ -40,12 +40,12 @@ export default function ConstructionTracker() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [stageToUndo, setStageToUndo] = useState<ProgressStage | null>(null)
   const [loading, setLoading] = useState(true)
+  const [initializing, setInitializing] = useState(false)
 
   // State for tanks data
   const [n00TanksData, setN00TanksData] = useState<Record<string, WaterTank>>(n00Tanks)
   const [n10TanksData, setN10TanksData] = useState<Record<string, WaterTank>>(n10Tanks)
   const [n20TanksData, setN20TanksData] = useState<Record<string, WaterTank>>(n20Tanks)
-  const [initializing, setInitializing] = useState(false)
 
   // Add a new state for the inspection dialog
   const [isInspectionDialogOpen, setIsInspectionDialogOpen] = useState(false)
@@ -69,55 +69,74 @@ export default function ConstructionTracker() {
 
   // Load tank data from the API when the component mounts
   useEffect(() => {
-    fetchTanksData();
-  }, []);
-
-  // Function to fetch tanks data
-  const fetchTanksData = async () => {
-    try {
-      // Attempt to fetch data from API
-      const [n00Response, n10Response, n20Response] = await Promise.all([
-        fetch('/api/tasks/n00Tanks'),
-        fetch('/api/tasks/n10Tanks'),
-        fetch('/api/tasks/n20Tanks')
-      ]);
-      
-      const n00Data = await n00Response.json();
-      const n10Data = await n10Response.json();
-      const n20Data = await n20Response.json();
-      
-      // Set the data in state without modifying it
-      setN00TanksData(n00Data);
-      setN10TanksData(n10Data);
-      setN20TanksData(n20Data);
-      
-    } catch (error) {
-      console.error("Error fetching tanks data:", error);
-      // Fallback to initial data
-      setN00TanksData(n00Tanks);
-      setN10TanksData(n10Tanks);
-      setN20TanksData(n20Tanks);
+    async function fetchTasksData() {
+      try {
+        setLoading(true);
+        console.log("Fetching tank data...");
+        const response = await fetch('/api/tasks');
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Tank data fetched successfully:", data);
+          
+          // Update state with data from API
+          if (data.n00Tanks && Object.keys(data.n00Tanks).length > 0) {
+            setN00TanksData(data.n00Tanks);
+          }
+          if (data.n10Tanks && Object.keys(data.n10Tanks).length > 0) {
+            setN10TanksData(data.n10Tanks);
+          }
+          if (data.n20Tanks && Object.keys(data.n20Tanks).length > 0) {
+            setN20TanksData(data.n20Tanks);
+          }
+        } else {
+          console.log("API returned non-OK status, initializing with default data");
+          // If API fails, initialize with default data and save it to the API
+          setInitializing(true);
+          await saveTanksData();
+          setInitializing(false);
+        }
+      } catch (error) {
+        console.error("Error fetching tasks data:", error);
+        // On error, initialize with default data and save it to the API
+        setInitializing(true);
+        await saveTanksData();
+        setInitializing(false);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    fetchTasksData();
+  }, []);
 
   // Function to save all tanks data to the API
   const saveTanksData = async () => {
     try {
-      const tasksData = {
-        n00Tanks: n00TanksData,
-        n10Tanks: n10TanksData,
-        n20Tanks: n20TanksData
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          n00Tanks,
+          n10Tanks,
+          n20Tanks,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save tanks data');
       }
 
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tasksData)
-      })
+      // Set the state with the initial data
+      setN00TanksData(n00Tanks);
+      setN10TanksData(n10Tanks);
+      setN20TanksData(n20Tanks);
     } catch (error) {
-      console.error("Error saving tasks data:", error)
+      console.error('Error saving tanks data:', error);
     }
-  }
+  };
 
   // Function to get tank color based on status
   const getTankColor = (tank: WaterTank) => {
