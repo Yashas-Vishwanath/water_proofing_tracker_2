@@ -82,55 +82,11 @@ export default function ConstructionTracker() {
         fetch('/api/tasks/n20Tanks')
       ]);
       
-      let n00Data = await n00Response.json();
-      let n10Data = await n10Response.json();
-      let n20Data = await n20Response.json();
+      const n00Data = await n00Response.json();
+      const n10Data = await n10Response.json();
+      const n20Data = await n20Response.json();
       
-      // Handle hardcoding of completed stages for non-EB16-STE-089 grouped tanks
-      // This ensures that even on page refresh, the tanks are marked as completed
-      const hardcodeCompletedStages = (tanksData: Record<string, WaterTank>) => {
-        return Object.entries(tanksData).reduce((acc, [id, tank]) => {
-          // Special case for grouped tanks except EB16-STE-089
-          if (tank.isGrouped && tank.subTanks && id !== "EB16-STE-089") {
-            // Get applicable stages for this tank type
-            const applicableStages = getApplicableStages(tank);
-            const lastStage = applicableStages[applicableStages.length - 1];
-            
-            // Mark all progress stages as completed
-            const completedProgress = applicableStages.map(stage => ({
-              stage,
-              status: "Completed" as ProgressStatus
-            }));
-            
-            // Update the sub-tanks' progress and currentStage
-            const updatedSubTanks = tank.subTanks.map(subTank => ({
-              ...subTank,
-              progress: [...completedProgress],
-              currentStage: lastStage
-            }));
-            
-            // Return the tank with updated sub-tanks and currentStage
-            return { 
-              ...acc, 
-              [id]: {
-                ...tank, 
-                subTanks: updatedSubTanks,
-                currentStage: lastStage,
-                progress: completedProgress
-              } 
-            };
-          }
-          
-          return { ...acc, [id]: tank };
-        }, {} as Record<string, WaterTank>);
-      };
-      
-      // Apply hardcoding to all tank levels
-      n00Data = hardcodeCompletedStages(n00Data);
-      n10Data = hardcodeCompletedStages(n10Data);
-      n20Data = hardcodeCompletedStages(n20Data);
-      
-      // Set the data in state
+      // Set the data in state without modifying it
       setN00TanksData(n00Data);
       setN10TanksData(n10Data);
       setN20TanksData(n20Data);
@@ -165,67 +121,22 @@ export default function ConstructionTracker() {
 
   // Function to get tank color based on status
   const getTankColor = (tank: WaterTank) => {
-    // Special handling for grouped tanks with sub-tanks
-    if (tank.isGrouped && tank.subTanks) {
-      // EB16-STE-089 tanks should use their actual status
-      if (tank.id === "EB16-STE-089") {
-        // Check if all sub-tanks are fully completed
-        const allSubTanksCompleted = tank.subTanks.every(subTank => {
-          const applicableStages = getApplicableStages({
-            ...subTank,
-            isSubTank: true,
-            parentId: tank.id
-          });
-          
-          // For each sub-tank, ensure all applicable stages are completed
-          return applicableStages.every(stage => {
-            const stageProgress = subTank.progress.find(p => p.stage === stage);
-            return stageProgress && stageProgress.status === "Completed";
-          });
-        });
-        
-        if (allSubTanksCompleted) {
-          return "bg-green-600"; // Green for completed tanks
-        }
-      } else {
-        // For all other tanks with sub-tanks, hardcode them as completed (green)
-        return "bg-green-600";
-      }
-    } else {
-      // Check if all tasks are completed for regular tanks
-      const applicableStages = getApplicableStages(tank);
-      const allCompleted = applicableStages.every(stage => {
-        const progressStage = tank.progress.find(p => p.stage === stage);
-        return progressStage && progressStage.status === "Completed";
-      });
-      
-      if (allCompleted) {
-        return "bg-green-600"; // Green for completed tanks
-      }
+    // Check if all tasks are completed
+    const allCompleted = tank.progress.every((p) => p.status === "Completed")
+    if (allCompleted) {
+      return "bg-green-600" // Green for completed tanks
     }
 
     // Check if in inspection stage
     const isInspection = tank.currentStage === "Inspection Stage 1" || 
                          tank.currentStage === "Inspection Stage 2" || 
-                         tank.currentStage === "Inspection Stage 3";
-    
+                         tank.currentStage === "Inspection Stage 3"
     if (isInspection) {
-      // Double-check if the tank is actually fully completed despite being in inspection stage
-      const applicableStages = getApplicableStages(tank);
-      const allCompleted = applicableStages.every(stage => {
-        const progressStage = tank.progress.find(p => p.stage === stage);
-        return progressStage && progressStage.status === "Completed";
-      });
-      
-      if (allCompleted) {
-        return "bg-green-600"; // Green for completed tanks even if currentStage is an inspection stage
-      }
-      
-      return "bg-purple-600"; // Purple for inspection stages
+      return "bg-purple-600" // Purple for inspection stages
     }
 
     // Default is red for ongoing operations
-    return "bg-red-600";
+    return "bg-red-600"
   }
 
   // Function to handle exporting to spreadsheet
@@ -410,33 +321,8 @@ export default function ConstructionTracker() {
           
           // Then add each sub-tank as a separate entry with parent reference
           tank.subTanks.forEach((subTank: any) => {
-            // Make a copy of the sub-tank to avoid modifying the original
-            const subTankCopy = { ...subTank };
-            
-            // If this is NOT an EB16-STE-089 sub-tank, mark all stages as completed
-            if (tank.id !== "EB16-STE-089") {
-              // Get applicable stages for this sub-tank
-              const applicableStages = getApplicableStages({
-                ...subTankCopy,
-                isSubTank: true,
-                parentId: tank.id
-              });
-              
-              // Mark all stages as completed
-              subTankCopy.progress = applicableStages.map(stage => ({
-                stage,
-                status: "Completed" as ProgressStatus
-              }));
-              
-              // Update the current stage to the last applicable stage
-              if (applicableStages.length > 0) {
-                subTankCopy.currentStage = applicableStages[applicableStages.length - 1];
-              }
-            }
-            
-            // Add the sub-tank to the list
             tanks.push({
-              ...subTankCopy,
+              ...subTank,
               parentId: tank.id,
               parentName: tank.name || tank.id,
               level,
@@ -604,37 +490,38 @@ export default function ConstructionTracker() {
 
   // Function to get tanks ready for inspection
   const getTanksReadyForInspection = () => {
-    const readyTanks: { id: string; name: string; currentStage: string; level: string }[] = [];
-    
-    // Helper function to check if a tank is in inspection stage and add it to the list
-    const checkTankForInspection = (tank: WaterTank, level: string) => {
-      // Skip non-EB16-STE-089 grouped tanks (they're all marked as completed already)
-      if (tank.isGrouped && tank.subTanks && tank.id !== "EB16-STE-089") {
-        return;
-      }
-      
-      const isInspectionStage = tank.currentStage?.includes("Inspection Stage");
-      if (isInspectionStage) {
-        readyTanks.push({
-          id: tank.id,
-          name: tank.name || tank.id,
-          currentStage: tank.currentStage,
-          level
-        });
-      }
+    // Helper function to check if all stages are completed
+    const isFullyCompleted = (tank: WaterTank) => {
+      return tank.progress.every(p => p.status === "Completed");
     };
-    
-    // Process tanks from all levels
-    Object.values(n00TanksData).forEach(tank => checkTankForInspection(tank, "N00"));
-    Object.values(n10TanksData).forEach(tank => checkTankForInspection(tank, "N10"));
-    Object.values(n20TanksData).forEach(tank => checkTankForInspection(tank, "N20"));
+
+    const n00Ready = Object.values(n00TanksData).filter(
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
+                !isFullyCompleted(tank)
+    );
+
+    const n10Ready = Object.values(n10TanksData).filter(
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
+                !isFullyCompleted(tank)
+    );
+
+    const n20Ready = Object.values(n20TanksData).filter(
+      (tank) => (tank.currentStage === "Inspection Stage 1" || 
+                tank.currentStage === "Inspection Stage 2" || 
+                tank.currentStage === "Inspection Stage 3") && 
+                !isFullyCompleted(tank)
+    );
     
     return {
-      n00: readyTanks.filter(tank => tank.level === "N00"),
-      n10: readyTanks.filter(tank => tank.level === "N10"),
-      n20: readyTanks.filter(tank => tank.level === "N20"),
-      n30: [] // No tanks in N30 yet
-    };
+      n00: n00Ready,
+      n10: n10Ready,
+      n20: n20Ready,
+      n30: [], // No tanks in N30 yet
+    }
   };
 
   // Function to handle tank click
@@ -757,7 +644,7 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         } else {
           // This was the last stage, just mark it as completed
@@ -773,7 +660,7 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         }
         
@@ -913,7 +800,7 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
           
           // Update the selected tank in state to see changes immediately
