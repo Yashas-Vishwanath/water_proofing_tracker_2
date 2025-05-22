@@ -354,13 +354,10 @@ export default function ConstructionTracker() {
     // Process a level's tanks and add them to the result array
     const processTanks = (levelTanks: Record<string, any>, level: string) => {
       Object.values(levelTanks).forEach(tank => {
-        // Add the main tank
-        const tankWithLevel = { ...tank, level };
-        
-        // Special handling ONLY for EB16-STE-089 tank
-        if (tank.id === "EB16-STE-089" && tank.subTanks) {
+        // For tanks with sub-tanks
+        if (tank.isGrouped && tank.subTanks) {
           // Add the parent tank first
-          tanks.push({ ...tankWithLevel });
+          tanks.push({ ...tank, level });
           
           // Then add each sub-tank as a separate entry with parent reference
           tank.subTanks.forEach((subTank: any) => {
@@ -375,7 +372,7 @@ export default function ConstructionTracker() {
           });
         } else {
           // Normal tank, just add it
-          tanks.push(tankWithLevel);
+          tanks.push({ ...tank, level });
         }
       });
     };
@@ -687,7 +684,7 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         } else {
           // This was the last stage, just mark it as completed
@@ -703,12 +700,10 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         }
         
-        // Update the selected tank in state to see changes immediately
-        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
@@ -761,8 +756,6 @@ export default function ConstructionTracker() {
           updatedTank.currentStage = stage;
         }
         
-        // Update the selected tank in state to see changes immediately
-        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
@@ -843,11 +836,9 @@ export default function ConstructionTracker() {
           // Update the selected tank with the updated sub-tanks
           updatedTank.subTanks = updatedSubTanks;
           
-          // Mirror the active sub-tank's currentStage to the parent
+          // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
           
-          // Update the selected tank in state to see changes immediately
-          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
@@ -898,8 +889,6 @@ export default function ConstructionTracker() {
           updatedTank.progress = updatedProgress;
           updatedTank.currentStage = newCurrentStage;
           
-          // Update the selected tank in state to see changes immediately
-          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
