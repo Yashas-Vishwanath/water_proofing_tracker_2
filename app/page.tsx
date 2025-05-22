@@ -664,8 +664,6 @@ export default function ConstructionTracker() {
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
         }
         
-        // Update the selected tank in state to see changes immediately
-        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
@@ -718,8 +716,6 @@ export default function ConstructionTracker() {
           updatedTank.currentStage = stage;
         }
         
-        // Update the selected tank in state to see changes immediately
-        setSelectedTank(updatedTank);
         // Update the tank data based on which level it belongs to
         updateTankData(updatedTank);
       }
@@ -803,8 +799,6 @@ export default function ConstructionTracker() {
           // Mirror the active sub-tank's currentStage back to the parent tank
           updatedTank.currentStage = updatedSubTanks[selectedTank.currentSubTankIndex].currentStage;
           
-          // Update the selected tank in state to see changes immediately
-          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
@@ -855,8 +849,6 @@ export default function ConstructionTracker() {
           updatedTank.progress = updatedProgress;
           updatedTank.currentStage = newCurrentStage;
           
-          // Update the selected tank in state to see changes immediately
-          setSelectedTank(updatedTank);
           // Update the tank data based on which level it belongs to
           updateTankData(updatedTank);
         }
