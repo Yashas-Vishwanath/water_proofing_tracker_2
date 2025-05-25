@@ -20,15 +20,21 @@ export const getTankColor = (tank: WaterTank) => {
       return "bg-green-600"; // Green for all completed
     }
     
-    // 2. Check if ANY sub-tank is in inspection stage - this is the second priority
+    // 2. Check if ANY sub-tank is in inspection stage but not completed
     const anySubTankInInspection = tank.subTanks.some(subTank => {
-      return subTank.currentStage === "Inspection Stage 1" || 
-             subTank.currentStage === "Inspection Stage 2" || 
-             subTank.currentStage === "Inspection Stage 3";
+      // Look for any inspection stage that is in progress or not yet marked as completed
+      const inspectionStage1 = subTank.progress.find(p => p.stage === "Inspection Stage 1");
+      const inspectionStage2 = subTank.progress.find(p => p.stage === "Inspection Stage 2");
+      const inspectionStage3 = subTank.progress.find(p => p.stage === "Inspection Stage 3");
+      
+      // Check if any inspection stage is "In Progress" and not "Completed"
+      return (inspectionStage1 && inspectionStage1.status === "In Progress") ||
+             (inspectionStage2 && inspectionStage2.status === "In Progress") ||
+             (inspectionStage3 && inspectionStage3.status === "In Progress");
     });
     
     if (anySubTankInInspection) {
-      return "bg-purple-600"; // Purple if any sub-tank is in inspection
+      return "bg-purple-600"; // Purple if any sub-tank is in an inspection stage
     }
     
     // 3. Default for grouped tanks with incomplete sub-tanks
@@ -42,10 +48,16 @@ export const getTankColor = (tank: WaterTank) => {
       return "bg-green-600"; // Green for completed tanks
     }
     
-    // 2. Check if in inspection stage
-    const isInInspection = tank.currentStage === "Inspection Stage 1" || 
-                          tank.currentStage === "Inspection Stage 2" || 
-                          tank.currentStage === "Inspection Stage 3";
+    // 2. Check if any inspection stage is in progress
+    const inspectionStage1 = tank.progress.find(p => p.stage === "Inspection Stage 1");
+    const inspectionStage2 = tank.progress.find(p => p.stage === "Inspection Stage 2");
+    const inspectionStage3 = tank.progress.find(p => p.stage === "Inspection Stage 3");
+    
+    // Check if any inspection stage is "In Progress" and not "Completed"
+    const isInInspection = (inspectionStage1 && inspectionStage1.status === "In Progress") ||
+                          (inspectionStage2 && inspectionStage2.status === "In Progress") ||
+                          (inspectionStage3 && inspectionStage3.status === "In Progress");
+    
     if (isInInspection) {
       return "bg-purple-600"; // Purple for inspection stages
     }
