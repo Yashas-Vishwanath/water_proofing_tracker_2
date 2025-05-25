@@ -48,10 +48,10 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
   const tankId = tank.id;
   const tankType = tank.type;
   
-  // Special case for EB16-STE-089 tanks that need all stages
+  // Special case for EB16-STE-089 Large Tank-01 (has dwall stages)
   if (
-    (tankId && tankId.includes("EB16-STE-089")) ||
-    (isSubTank && parentId && parentId.includes("EB16-STE-089"))
+    (tankId && tankId.includes("EB16-STE-089") && tankId.includes("Large Tank-01")) ||
+    (isSubTank && parentId && parentId.includes("EB16-STE-089") && tank.id && tank.id.includes("Large Tank-01"))
   ) {
     return [
       "Formwork Removal",
@@ -62,6 +62,23 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2",
+      "Waterproofing of floor",
+      "Inspection Stage 3"
+    ] as ProgressStage[];
+  }
+  
+  // Other EB16-STE-089 tanks (Small Tank-02, Small Tank-03) - no dwall stages
+  if (
+    (tankId && tankId.includes("EB16-STE-089")) ||
+    (isSubTank && parentId && parentId.includes("EB16-STE-089"))
+  ) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2",
+      "Waterproofing of floor",
       "Inspection Stage 3"
     ] as ProgressStage[];
   }
