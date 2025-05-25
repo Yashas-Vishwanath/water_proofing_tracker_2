@@ -280,13 +280,27 @@ export async function updateTank(level: string, tankId: string, updatedTank: Wat
         allTanksData[level] = {};
       }
       
-      allTanksData[level][tankId] = {
+      // Create a deep clone of the updated tank to ensure proper saving
+      const tankToSave = {
         ...staticTank,
         progress: updatedTank.progress,
-        currentStage: updatedTank.currentStage,
-        subTanks: updatedTank.subTanks
+        currentStage: updatedTank.currentStage
       };
       
+      // For grouped tanks, we need to properly save the sub-tanks
+      if (updatedTank.isGrouped && updatedTank.subTanks) {
+        // Create a deep copy of the sub-tanks array with each sub-tank's progress and currentStage
+        tankToSave.subTanks = updatedTank.subTanks.map(subTank => ({
+          ...subTank,
+          // Ensure these fields are deeply copied
+          progress: [...subTank.progress]
+        }));
+      }
+      
+      // Update the tank data in our local storage structure
+      allTanksData[level][tankId] = tankToSave;
+      
+      // Save the entire updated tank data
       await storage.set('tanksData', allTanksData);
     }
 
