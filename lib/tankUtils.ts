@@ -46,12 +46,27 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
   const isSubTank = tank.isSubTank;
   const parentId = tank.parentId;
   const tankId = tank.id;
+  const tankName = tank.name;
   const tankType = tank.type;
   
-  // Special case for EB16-STE-089 Large Tank-01 (has dwall stages)
+  // Special case for EB16-STE-089 Tank-01 (the large tank with dwall stages)
+  // We need to detect if this is the first sub-tank (index 0) of EB16-STE-089
   if (
-    (tankId && tankId.includes("EB16-STE-089") && tankId.includes("Large Tank-01")) ||
-    (isSubTank && parentId && parentId.includes("EB16-STE-089") && tank.id && tank.id.includes("Large Tank-01"))
+    // Check for exact tank IDs
+    (tankId && (
+      tankId.includes("EB16-STE-089-TANK-01") || 
+      tankId.includes("LARGE TANK-01")
+    )) ||
+    // Check by name 
+    (tankName && (
+      tankName.includes("LARGE TANK-01") || 
+      tankName === "01" || 
+      tankName === "TANK-01"
+    )) ||
+    // Check if this is a sub-tank of EB16-STE-089 with index 0
+    (isSubTank && parentId && parentId.includes("EB16-STE-089") && 
+     ((tankId && (tankId.includes("TANK-01") || tankId.includes("01"))) || 
+      (tank.index === 0)))
   ) {
     return [
       "Formwork Removal",
@@ -67,7 +82,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     ] as ProgressStage[];
   }
   
-  // Other EB16-STE-089 tanks (Small Tank-02, Small Tank-03) - no dwall stages
+  // Other EB16-STE-089 tanks (Tank-02, Tank-03) - no dwall stages
   if (
     (tankId && tankId.includes("EB16-STE-089")) ||
     (isSubTank && parentId && parentId.includes("EB16-STE-089"))

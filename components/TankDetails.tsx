@@ -71,7 +71,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({
           ...subTank,
           isSubTank: true,
           parentId: tank.id,
-          type: tank.type
+          type: tank.type,
+          index: activeSubTankIndex // Pass the index to help identify which sub-tank this is
         };
       }
     }
@@ -149,7 +150,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({
                     className={index === activeSubTankIndex ? "bg-black text-white" : ""}
                     onClick={() => switchToSubTank(index)}
                   >
-                    {subTank.id.split('-').slice(-1)[0]}
+                    {subTank.name}
                   </Button>
                 ))}
               </div>
