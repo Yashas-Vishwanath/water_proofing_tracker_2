@@ -5,7 +5,6 @@ export interface TanksDataState {
   n00TanksData: Record<string, WaterTank>;
   n10TanksData: Record<string, WaterTank>;
   n20TanksData: Record<string, WaterTank>;
-  n30TanksData: Record<string, WaterTank>;
   loading: boolean;
   initializing: boolean;
 }
@@ -16,7 +15,6 @@ export const useTanksData = () => {
     n00TanksData: n00Tanks,
     n10TanksData: n10Tanks,
     n20TanksData: n20Tanks,
-    n30TanksData: n30Tanks,
     loading: true,
     initializing: false
   });
@@ -43,7 +41,6 @@ export const useTanksData = () => {
           n00TanksData: data.n00Tanks && Object.keys(data.n00Tanks).length > 0 ? data.n00Tanks : prev.n00TanksData,
           n10TanksData: data.n10Tanks && Object.keys(data.n10Tanks).length > 0 ? data.n10Tanks : prev.n10TanksData,
           n20TanksData: data.n20Tanks && Object.keys(data.n20Tanks).length > 0 ? data.n20Tanks : prev.n20TanksData,
-          n30TanksData: data.n30Tanks && Object.keys(data.n30Tanks).length > 0 ? data.n30Tanks : prev.n30TanksData,
           loading: false
         }));
       } else {
@@ -74,7 +71,6 @@ export const useTanksData = () => {
           n00Tanks,
           n10Tanks,
           n20Tanks,
-          n30Tanks,
         }),
       });
 
@@ -87,8 +83,7 @@ export const useTanksData = () => {
         ...prev,
         n00TanksData: n00Tanks,
         n10TanksData: n10Tanks,
-        n20TanksData: n20Tanks,
-        n30TanksData: n30Tanks
+        n20TanksData: n20Tanks
       }));
     } catch (error) {
       console.error('Error saving tanks data:', error);
@@ -112,8 +107,6 @@ export const useTanksData = () => {
       levelKey = 'n10TanksData';
     } else if (level === 'N20') {
       levelKey = 'n20TanksData';
-    } else if (level === 'N30') {
-      levelKey = 'n30TanksData';
     }
     
     // Update local state
@@ -147,8 +140,6 @@ export const useTanksData = () => {
         return tanksData.n10TanksData;
       case 'N20':
         return tanksData.n20TanksData;
-      case 'N30':
-        return tanksData.n30TanksData;
       default:
         return {};
     }
