@@ -434,76 +434,6 @@ export const n10Tanks: Record<string, WaterTank> = {
     },
     type: "MANHOLE",
   },
-  "EB16-STE-089": {
-    id: "EB16-STE-089",
-    name: "WATER TANKS | EB16-STE-089",
-    location: "Left Center",
-    currentStage: "Formwork Removal",
-    progress: [
-      { stage: "Formwork Removal", status: "Not Started" },
-      { stage: "Repair and Cleaning", status: "Not Started" },
-      { stage: "Inspection Stage 1", status: "Not Started" },
-      { stage: "Waterproofing of walls", status: "Not Started" },
-      { stage: "Inspection Stage 2", status: "Not Started" },
-      { stage: "Waterproofing of floor", status: "Not Started" },
-      { stage: "Inspection Stage 3", status: "Not Started" }
-    ],
-    coordinates: {
-      top: 455,
-      left: 280,
-      width: 20,
-      height: 20,
-    },
-    type: "WATER TANKS",
-    isGrouped: true,
-    subTanks: [
-      {
-        id: "EB16-STE-089-TANK-01",
-        name: "LARGE TANK-01",
-        currentStage: "Formwork Removal",
-        progress: [
-          { stage: "Formwork Removal", status: "In Progress" },
-          { stage: "Repair and Cleaning", status: "Not Started" },
-          { stage: "Dwall anchorage removal", status: "Not Started" },
-          { stage: "Dwall anchorage waterproofing", status: "Not Started" },
-          { stage: "Grout openings in wall", status: "Not Started" },
-          { stage: "Inspection Stage 1", status: "Not Started" },
-          { stage: "Waterproofing of walls", status: "Not Started" },
-          { stage: "Inspection Stage 2", status: "Not Started" },
-          { stage: "Waterproofing of floor", status: "Not Started" },
-          { stage: "Inspection Stage 3", status: "Not Started" }
-        ],
-      },
-      {
-        id: "EB16-STE-089-TANK-02",
-        name: "SMALL TANK-02",
-        currentStage: "Formwork Removal",
-        progress: [
-          { stage: "Formwork Removal", status: "In Progress" },
-          { stage: "Repair and Cleaning", status: "Not Started" },
-          { stage: "Inspection Stage 1", status: "Not Started" },
-          { stage: "Waterproofing of walls", status: "Not Started" },
-          { stage: "Inspection Stage 2", status: "Not Started" },
-          { stage: "Waterproofing of floor", status: "Not Started" },
-          { stage: "Inspection Stage 3", status: "Not Started" }
-        ],
-      },
-      {
-        id: "EB16-STE-089-TANK-03",
-        name: "SMALL TANK-03",
-        currentStage: "Formwork Removal",
-        progress: [
-          { stage: "Formwork Removal", status: "In Progress" },
-          { stage: "Repair and Cleaning", status: "Not Started" },
-          { stage: "Inspection Stage 1", status: "Not Started" },
-          { stage: "Waterproofing of walls", status: "Not Started" },
-          { stage: "Inspection Stage 2", status: "Not Started" },
-          { stage: "Waterproofing of floor", status: "Not Started" },
-          { stage: "Inspection Stage 3", status: "Not Started" }
-        ],
-      }
-    ]
-  },
   "EB1-INTERIOR-1": {
     id: "EB1-INTERIOR-1",
     name: "WATER TANKS | EB1-INTERIOR",
@@ -635,54 +565,7 @@ export const n10Tanks: Record<string, WaterTank> = {
         })),
       }
     ]
-  },
-  "EB9": {
-    id: "EB9",
-    name: "WATER TANKS | EB9",
-    location: "Bottom Right",
-    currentStage: "Formwork Removal",
-    progress: allProgressStages.map((stage) => ({
-      stage,
-      status: "Not Started",
-    })),
-    coordinates: {
-      top: 715,
-      left: 980,
-      width: 20,
-      height: 20,
-    },
-    type: "WATER TANKS",
-    isGrouped: true,
-    subTanks: [
-      {
-        id: "EB9-TANK-A",
-        name: "TANK A",
-        currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
-      },
-      {
-        id: "EB9-TANK-B",
-        name: "TANK B",
-        currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
-      },
-      {
-        id: "EB9-TANK-C",
-        name: "TANK C",
-        currentStage: "Formwork Removal",
-        progress: allProgressStages.map((stage) => ({
-          stage,
-          status: stage === "Formwork Removal" ? "In Progress" : "Not Started",
-        })),
-      }
-    ]
-  },
+  }
 }
 
 // Update the tank data for N20 level with correct tank IDs and positions based on the new image
