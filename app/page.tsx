@@ -691,6 +691,89 @@ export default function ConstructionTracker() {
   const markTaskAsCompleted = (stage: ProgressStage) => {
     if (!selectedTank) return;
 
+    // Special handling for Repair and Cleaning - always set next stage to In Progress
+    if (stage === "Repair and Cleaning") {
+      const updatedTank = { ...selectedTank } as ExtendedWaterTank;
+      
+      // For grouped tanks with sub-tanks
+      if (updatedTank.isGrouped && updatedTank.subTanks) {
+        const subTankIndex = updatedTank.currentSubTankIndex !== undefined ? updatedTank.currentSubTankIndex : 0;
+        const subTank = updatedTank.subTanks[subTankIndex];
+        
+        if (subTank) {
+          // Create copies to avoid direct state mutation
+          const updatedSubTanks = [...updatedTank.subTanks];
+          const updatedSubTank = { ...subTank };
+          const updatedProgress = [...updatedSubTank.progress];
+          
+          // First mark Repair and Cleaning as Completed
+          const repairIndex = updatedProgress.findIndex(p => p.stage === "Repair and Cleaning");
+          if (repairIndex !== -1) {
+            updatedProgress[repairIndex] = { ...updatedProgress[repairIndex], status: "Completed" };
+          }
+          
+          // Then mark Inspection Stage 1 as In Progress
+          const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 1");
+          if (inspectionIndex !== -1) {
+            updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "In Progress" };
+          } else {
+            // If not found, add it
+            updatedProgress.push({ stage: "Inspection Stage 1", status: "In Progress" });
+          }
+          
+          // Update the sub-tank with new progress
+          updatedSubTank.progress = updatedProgress;
+          updatedSubTank.currentStage = "Inspection Stage 1";
+          
+          // Update the sub-tanks array
+          updatedSubTanks[subTankIndex] = updatedSubTank;
+          
+          // Update the parent tank
+          updatedTank.subTanks = updatedSubTanks;
+          updatedTank.currentStage = "Inspection Stage 1";
+          
+          // Update the selected tank state
+          setSelectedTank(updatedTank);
+          
+          // Update the tank data based on which level it belongs to
+          updateTankData(updatedTank);
+          return;
+        }
+      }
+      // For regular tanks (non-grouped)
+      else {
+        // Create a copy of the progress array
+        const updatedProgress = [...updatedTank.progress];
+        
+        // First mark Repair and Cleaning as Completed
+        const repairIndex = updatedProgress.findIndex(p => p.stage === "Repair and Cleaning");
+        if (repairIndex !== -1) {
+          updatedProgress[repairIndex] = { ...updatedProgress[repairIndex], status: "Completed" };
+        }
+        
+        // Then mark Inspection Stage 1 as In Progress
+        const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 1");
+        if (inspectionIndex !== -1) {
+          updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "In Progress" };
+        } else {
+          // If not found, add it
+          updatedProgress.push({ stage: "Inspection Stage 1", status: "In Progress" });
+        }
+        
+        // Update the tank with new progress
+        updatedTank.progress = updatedProgress;
+        updatedTank.currentStage = "Inspection Stage 1";
+        
+        // Update the selected tank state
+        setSelectedTank(updatedTank);
+        
+        // Update the tank data based on which level it belongs to
+        updateTankData(updatedTank);
+        return;
+      }
+    }
+
+    // Normal processing for other stages
     // Clone the selected tank to avoid modifying state directly
     const updatedTank = { ...selectedTank } as ExtendedWaterTank;
     
@@ -733,17 +816,11 @@ export default function ConstructionTracker() {
           const nextStageProgressIndex = updatedProgress.findIndex(p => p.stage === nextStage);
           
           if (nextStageProgressIndex !== -1) {
-            // Update existing stage - always set to "In Progress" regardless of previous status
+            // Update existing stage
             updatedProgress[nextStageProgressIndex] = { 
               ...updatedProgress[nextStageProgressIndex], 
               status: "In Progress" 
             };
-            
-            // Special handling for Inspection Stage 1 when coming from Repair and Cleaning
-            if (stage === "Repair and Cleaning" && nextStage === "Inspection Stage 1") {
-              // Ensure Inspection Stage 1 is marked as "In Progress"
-              updatedProgress[nextStageProgressIndex].status = "In Progress";
-            }
           } else {
             // Add new stage
             updatedProgress.push({ stage: nextStage, status: "In Progress" });
@@ -816,17 +893,11 @@ export default function ConstructionTracker() {
           const nextStageProgressIndex = updatedProgress.findIndex(p => p.stage === nextStage);
           
           if (nextStageProgressIndex !== -1) {
-            // Update existing stage - always set to "In Progress" regardless of previous status
+            // Update existing stage
             updatedProgress[nextStageProgressIndex] = { 
               ...updatedProgress[nextStageProgressIndex], 
               status: "In Progress" 
             };
-            
-            // Special handling for Inspection Stage 1 when coming from Repair and Cleaning
-            if (stage === "Repair and Cleaning" && nextStage === "Inspection Stage 1") {
-              // Ensure Inspection Stage 1 is marked as "In Progress"
-              updatedProgress[nextStageProgressIndex].status = "In Progress";
-            }
           } else {
             // Add new stage
             updatedProgress.push({ stage: nextStage, status: "In Progress" });
