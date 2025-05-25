@@ -18,6 +18,13 @@ import {
   n20Tanks
 } from "./data/tanks"
 
+// Import our new components and hooks
+import TankMap from "@/components/TankMap"
+import TankDetails from "@/components/TankDetails"
+import { useTanksData } from "@/hooks/useTanksData"
+import { useGroupedTankProgress } from "@/hooks/useGroupedTankProgress"
+import { isFullyCompleted } from "@/lib/tankUtils"
+
 // Add this type declaration for the global XLSX object
 declare global {
   interface Window {
@@ -66,6 +73,10 @@ export default function ConstructionTracker() {
       left: left
     };
   };
+
+  // Use our custom hooks
+  const tanksData = useTanksData();
+  const tankProgress = useGroupedTankProgress(null);
 
   // Load tank data from the API when the component mounts
   useEffect(() => {
@@ -1184,174 +1195,25 @@ export default function ConstructionTracker() {
       </main>
 
       {/* Tank Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{selectedTank?.name}</DialogTitle>
-            {selectedTank?.location && (
-              <DialogDescription>{selectedTank.location}</DialogDescription>
-            )}
-          </DialogHeader>
-          
-          {selectedTank?.isGrouped && selectedTank.subTanks ? (
-            // If this is a grouped tank, show sub-tanks horizontally instead of vertically
-            <div className="flex flex-row gap-4 py-2 overflow-x-auto">
-              {selectedTank.subTanks.map((subTank, index) => {
-                // Get applicable stages for this sub-tank
-                const applicableStages = getApplicableStages({
-                  ...subTank, 
-                  isSubTank: true, 
-                  parentId: selectedTank.id
-                });
-                
-                // Filter progress to only show applicable stages
-                const filteredProgress = applicableStages.map(stage => {
-                  // Find this stage in the subTank's progress array
-                  const existingProgress = subTank.progress.find(p => p.stage === stage);
-                  
-                  // If found, use it; otherwise create a default "Not Started" entry
-                  return existingProgress || { 
-                    stage, 
-                    status: "Not Started" as ProgressStatus 
-                  };
-                });
-                
-                return (
-                  <div key={subTank.id || index} className="border rounded-lg p-4 bg-gray-50 flex-1 min-w-[250px]">
-                    <h3 className="font-semibold text-lg mb-2">{subTank.name}</h3>
-                    <div className="grid gap-2">
-                      {filteredProgress.map((stage, stageIndex) => {
-                        // Determine if this is the current ongoing task
-                        const isCurrentTask = stage.status === "In Progress";
-                        
-                        return (
-                          <div
-                            key={`${subTank.id || index}-${stage.stage}`}
-                            className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
-                            onClick={() => {
-                              // Create a temporary copy of the selected tank with this sub-tank's progress
-                              const tempSelectedTank = {
-                                ...selectedTank,
-                                currentSubTankIndex: index,
-                                progress: subTank.progress
-                              };
-                              setSelectedTank(tempSelectedTank);
-                              toggleTaskCompletion(stage.stage);
-                            }}
-                          >
-                            <div
-                              className={`w-6 h-6 border rounded-md flex items-center justify-center ${
-                                stage.status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"
-                              }`}
-                            >
-                              {stage.status === "Completed" && <Check className="h-4 w-4 text-white" />}
-                            </div>
-                            <div className="flex-1">{stage.stage}</div>
-                            {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            // Regular non-grouped tank
-            <div className="grid gap-2 py-4">
-              {selectedTank && getApplicableStages(selectedTank).map((stage) => {
-                // Find this stage in the progress array
-                const progressStage = selectedTank.progress.find(p => p.stage === stage);
-                const status = progressStage ? progressStage.status : "Not Started";
-                
-                // Determine if this is the current ongoing task
-                const isCurrentTask = status === "In Progress";
-
-                return (
-                  <div
-                    key={stage}
-                    className={`flex items-center gap-3 py-2 px-3 rounded-md cursor-pointer ${isCurrentTask ? "bg-blue-100" : ""}`}
-                    onClick={() => toggleTaskCompletion(stage)}
-                  >
-                    <div
-                      className={`w-6 h-6 border rounded-md flex items-center justify-center ${status === "Completed" ? "bg-green-500 border-green-500" : "border-gray-400"}`}
-                    >
-                      {status === "Completed" && <Check className="h-4 w-4 text-white" />}
-                    </div>
-                    <div className="flex-1">{stage}</div>
-                    {isCurrentTask && <div className="text-blue-500 text-xs font-medium">Current Task</div>}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          
-          <div className="flex justify-end mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsDetailsOpen(false)}
-              className="mr-2"
-            >
-              Close
-            </Button>
-            <Button
-              onClick={async () => {
-                if (selectedTank) {
-                  // Get the level key based on active section
-                  const levelKey = activeSection === "N00" ? "n00Tanks" : 
-                                 activeSection === "N10" ? "n10Tanks" : 
-                                 activeSection === "N20" ? "n20Tanks" : null;
-                  
-                  if (levelKey) {
-                    try {
-                      // Save changes via API
-                      await fetch(`/api/tasks/${levelKey}/${selectedTank.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ updatedTank: selectedTank })
-                      });
-                    } catch (error) {
-                      console.error("Error saving tank data:", error);
-                    }
-                  }
-                  
-                  setIsDetailsOpen(false);
-                }
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmation Dialog for Undoing Tasks */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Undo</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to undo this task? This will also undo all subsequent tasks that were marked as
-              completed.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              No
-            </Button>
-            <Button variant="destructive" onClick={undoTask}>
-              Yes, Undo
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TankDetails
+        tank={selectedTank}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        onToggleStage={toggleTaskCompletion}
+        onConfirmUndo={undoTask}
+        stageToUndo={stageToUndo}
+        confirmDialogOpen={confirmDialogOpen}
+        onConfirmDialogClose={() => setConfirmDialogOpen(false)}
+      />
 
       {/* Ready for Inspection Dialog */}
       <Dialog open={isInspectionDialogOpen} onOpenChange={setIsInspectionDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Tanks Ready for Inspection</DialogTitle>
-            <DialogDescription>The following tanks are ready for inspection:</DialogDescription>
+            <DialogDescription>
+              The following tanks are ready for inspection
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {Object.entries(getTanksReadyForInspection()).map(
