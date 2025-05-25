@@ -118,7 +118,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Dwall anchorage waterproofing",
       "Grout openings in wall",
       "Inspection Stage 1",
-      "Waterproofing",
+      "Waterproofing of walls",
       "Inspection Stage 2",
       "Waterproofing of floor",
       "Inspection Stage 3"
@@ -134,7 +134,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
-      "Waterproofing",
+      "Waterproofing of walls",
       "Inspection Stage 2",
       "Waterproofing of floor",
       "Inspection Stage 3"
