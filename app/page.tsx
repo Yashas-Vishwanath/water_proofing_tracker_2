@@ -554,30 +554,58 @@ export default function ConstructionTracker() {
 
   // Function to get tanks ready for inspection
   const getTanksReadyForInspection = () => {
-    // Helper function to check if all stages are completed
+    // Helper function to check if all applicable stages are completed
     const isFullyCompleted = (tank: WaterTank) => {
-      return tank.progress.every(p => p.status === "Completed");
+      // Get the applicable stages for this tank
+      const applicableStages = getApplicableStages(tank);
+      
+      // Check if all applicable stages are completed
+      return applicableStages.every(stage => {
+        const stageProgress = tank.progress.find(p => p.stage === stage);
+        return stageProgress?.status === "Completed";
+      });
     };
 
+    // For grouped tanks, also check sub-tanks
+    const isGroupTankCompleted = (tank: WaterTank) => {
+      if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
+        return tank.subTanks.every(subTank => {
+          const applicableStages = getApplicableStages({
+            ...subTank,
+            isSubTank: true,
+            parentId: tank.id
+          });
+          
+          return applicableStages.every(stage => {
+            const stageProgress = subTank.progress.find(p => p.stage === stage);
+            return stageProgress?.status === "Completed";
+          });
+        });
+      }
+      
+      return isFullyCompleted(tank);
+    };
+
+    // Filter tanks that are in inspection stage but not fully completed
     const n00Ready = Object.values(n00TanksData).filter(
       (tank) => (tank.currentStage === "Inspection Stage 1" || 
                 tank.currentStage === "Inspection Stage 2" || 
                 tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
+                !isGroupTankCompleted(tank)
     );
 
     const n10Ready = Object.values(n10TanksData).filter(
       (tank) => (tank.currentStage === "Inspection Stage 1" || 
                 tank.currentStage === "Inspection Stage 2" || 
                 tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
+                !isGroupTankCompleted(tank)
     );
 
     const n20Ready = Object.values(n20TanksData).filter(
       (tank) => (tank.currentStage === "Inspection Stage 1" || 
                 tank.currentStage === "Inspection Stage 2" || 
                 tank.currentStage === "Inspection Stage 3") && 
-                !isFullyCompleted(tank)
+                !isGroupTankCompleted(tank)
     );
     
     return {
@@ -705,11 +733,17 @@ export default function ConstructionTracker() {
           const nextStageProgressIndex = updatedProgress.findIndex(p => p.stage === nextStage);
           
           if (nextStageProgressIndex !== -1) {
-            // Update existing stage
+            // Update existing stage - always set to "In Progress" regardless of previous status
             updatedProgress[nextStageProgressIndex] = { 
               ...updatedProgress[nextStageProgressIndex], 
               status: "In Progress" 
             };
+            
+            // Special handling for Inspection Stage 1 when coming from Repair and Cleaning
+            if (stage === "Repair and Cleaning" && nextStage === "Inspection Stage 1") {
+              // Ensure Inspection Stage 1 is marked as "In Progress"
+              updatedProgress[nextStageProgressIndex].status = "In Progress";
+            }
           } else {
             // Add new stage
             updatedProgress.push({ stage: nextStage, status: "In Progress" });
@@ -782,11 +816,17 @@ export default function ConstructionTracker() {
           const nextStageProgressIndex = updatedProgress.findIndex(p => p.stage === nextStage);
           
           if (nextStageProgressIndex !== -1) {
-            // Update existing stage
+            // Update existing stage - always set to "In Progress" regardless of previous status
             updatedProgress[nextStageProgressIndex] = { 
               ...updatedProgress[nextStageProgressIndex], 
               status: "In Progress" 
             };
+            
+            // Special handling for Inspection Stage 1 when coming from Repair and Cleaning
+            if (stage === "Repair and Cleaning" && nextStage === "Inspection Stage 1") {
+              // Ensure Inspection Stage 1 is marked as "In Progress"
+              updatedProgress[nextStageProgressIndex].status = "In Progress";
+            }
           } else {
             // Add new stage
             updatedProgress.push({ stage: nextStage, status: "In Progress" });
