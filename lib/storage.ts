@@ -129,6 +129,8 @@ export async function getTanksData(): Promise<TasksData> {
 
       // For each static tank, merge with its dynamic state
       for (const [tankId, staticTank] of Object.entries(staticTanks)) {
+        console.log(`[DEBUG] Processing tank ${level}/${tankId}`);
+        
         // Get the dynamic state for this tank
         let tankState: Record<string, any> = {};
         
@@ -152,28 +154,37 @@ export async function getTanksData(): Promise<TasksData> {
           }
         }
 
-        // Merge static data with dynamic state
-        const mergedTank = {
-          ...staticTank,
-          // Use progress from state if available, otherwise use default progress or static progress
-          progress: tankState.progress ? 
-            (typeof tankState.progress === 'string' ? 
-              JSON.parse(tankState.progress) : tankState.progress) : 
-            staticTank.progress || INITIAL_PROGRESS,
-          // Use currentStage from state if available, otherwise use static value
-          currentStage: tankState.currentStage || staticTank.currentStage
-        };
+        // Handle sub-tanks for both production and development
+        let mergedSubTanks = staticTank.subTanks || [];
         
-        // For grouped tanks, handle the sub-tanks specially
-        if (staticTank.isGrouped && staticTank.subTanks) {
+        if (staticTank.isGrouped && staticTank.subTanks && staticTank.subTanks.length > 0) {
           console.log(`[DEBUG] Merging a grouped tank: ${tankId}`);
           
-          // If we have saved sub-tanks data, use it
-          if (tankState.subTanks) {
-            console.log(`[DEBUG] Found ${tankState.subTanks.length} saved sub-tanks`);
+          if (isProduction) {
+            // In production, fetch each sub-tank individually from Redis
+            console.log(`[DEBUG] Production mode - fetching sub-tanks from Redis`);
+            mergedSubTanks = await Promise.all(
+              staticTank.subTanks.map(async (subTank) => {
+                const subTankState = await storage.hgetall(`state:subtank:${level}:${tankId}:${subTank.id}`);
+                console.log(`[DEBUG] Got sub-tank ${subTank.id} state: ${Object.keys(subTankState).length > 0 ? 'yes' : 'no'}`);
+                
+                return {
+                  ...subTank,
+                  progress: subTankState.progress ? 
+                    (typeof subTankState.progress === 'string' ? 
+                      JSON.parse(subTankState.progress) : subTankState.progress) : 
+                    subTank.progress || INITIAL_PROGRESS,
+                  currentStage: subTankState.currentStage || subTank.currentStage
+                };
+              })
+            );
+            console.log(`[DEBUG] Merged ${mergedSubTanks.length} sub-tanks from Redis`);
+          } else if (tankState.subTanks && tankState.subTanks.length > 0) {
+            // In development, use the saved sub-tanks data
+            console.log(`[DEBUG] Development mode - using ${tankState.subTanks.length} saved sub-tanks`);
             
             // Create merged sub-tanks by combining static and dynamic data
-            mergedTank.subTanks = staticTank.subTanks.map((staticSubTank, index) => {
+            mergedSubTanks = staticTank.subTanks.map((staticSubTank) => {
               // Find the corresponding saved sub-tank by ID
               const savedSubTank = tankState.subTanks.find((st: any) => st.id === staticSubTank.id);
               
@@ -193,17 +204,28 @@ export async function getTanksData(): Promise<TasksData> {
             });
           } else {
             console.log(`[DEBUG] No saved sub-tanks data, using static sub-tanks`);
-            mergedTank.subTanks = staticTank.subTanks;
+            mergedSubTanks = staticTank.subTanks;
           }
           
-          console.log(`[DEBUG] Final merged tank has ${mergedTank.subTanks.length} sub-tanks`);
-          if (mergedTank.subTanks.length > 0) {
+          if (mergedSubTanks && mergedSubTanks.length > 0) {
+            console.log(`[DEBUG] Final merged tank has ${mergedSubTanks.length} sub-tanks`);
             console.log(`[DEBUG] First sub-tank progress:`, 
-              mergedTank.subTanks[0].progress ? JSON.stringify(mergedTank.subTanks[0].progress) : 'no progress data');
+              mergedSubTanks[0].progress ? JSON.stringify(mergedSubTanks[0].progress) : 'no progress data');
+          } else {
+            console.log(`[DEBUG] Warning: No merged sub-tanks were created`);
           }
         }
         
-        combinedData[level][tankId] = mergedTank;
+        // Build the final merged tank
+        combinedData[level][tankId] = {
+          ...staticTank,
+          progress: tankState.progress ? 
+            (typeof tankState.progress === 'string' ? 
+              JSON.parse(tankState.progress) : tankState.progress) : 
+            staticTank.progress || INITIAL_PROGRESS,
+          currentStage: tankState.currentStage || staticTank.currentStage,
+          subTanks: mergedSubTanks
+        };
       }
     }
 
