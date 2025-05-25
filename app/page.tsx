@@ -601,10 +601,31 @@ export default function ConstructionTracker() {
     }
 
     if (tank) {
-      setSelectedTank(tank)
-      setIsDetailsOpen(true)
+      // For grouped tanks, initialize with currentSubTankIndex = 0
+      if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
+        setSelectedTank({
+          ...tank,
+          currentSubTankIndex: 0
+        } as ExtendedWaterTank);
+      } else {
+        setSelectedTank(tank);
+      }
+      setIsDetailsOpen(true);
     }
   }
+
+  // Handle switching between sub-tanks
+  const handleSubTankSwitch = (subTankIndex: number) => {
+    if (!selectedTank || !selectedTank.isGrouped || !selectedTank.subTanks) return;
+    
+    // Update the selected tank with the new sub-tank index
+    const updatedTank = {
+      ...selectedTank,
+      currentSubTankIndex: subTankIndex
+    };
+    
+    setSelectedTank(updatedTank);
+  };
 
   // Function to toggle task completion
   const toggleTaskCompletion = (stage: ProgressStage) => {
@@ -1252,6 +1273,7 @@ export default function ConstructionTracker() {
         stageToUndo={stageToUndo}
         confirmDialogOpen={confirmDialogOpen}
         onConfirmDialogClose={() => setConfirmDialogOpen(false)}
+        onSubTankSwitch={handleSubTankSwitch}
       />
 
       {/* Ready for Inspection Dialog */}

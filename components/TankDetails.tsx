@@ -28,6 +28,7 @@ interface TankDetailsProps {
   stageToUndo: ProgressStage | null;
   confirmDialogOpen: boolean;
   onConfirmDialogClose: () => void;
+  onSubTankSwitch: (subTankIndex: number) => void;
 }
 
 const TankDetails: React.FC<TankDetailsProps> = ({
@@ -38,7 +39,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({
   onConfirmUndo,
   stageToUndo,
   confirmDialogOpen,
-  onConfirmDialogClose
+  onConfirmDialogClose,
+  onSubTankSwitch
 }) => {
   const [activeSubTankIndex, setActiveSubTankIndex] = useState(0);
   
@@ -53,7 +55,13 @@ const TankDetails: React.FC<TankDetailsProps> = ({
   
   // Function to switch between sub-tanks
   const switchToSubTank = (index: number) => {
+    // Update local state
     setActiveSubTankIndex(index);
+    
+    // Update the parent component's state
+    onSubTankSwitch(index);
+    
+    // No need to close and reopen the dialog now that we have a proper handler
   };
   
   // Only show applicable stages for the tank type
