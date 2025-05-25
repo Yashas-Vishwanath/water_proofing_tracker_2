@@ -586,26 +586,58 @@ export default function ConstructionTracker() {
       return isFullyCompleted(tank);
     };
 
+    // Helper to check if a tank is in an inspection stage (either by currentStage or progress status)
+    const isInInspectionStage = (tank: WaterTank) => {
+      // Check currentStage property
+      const stageByProperty = 
+        tank.currentStage === "Inspection Stage 1" || 
+        tank.currentStage === "Inspection Stage 2" || 
+        tank.currentStage === "Inspection Stage 3";
+      
+      // Also check in progress array
+      const inspectionStage1 = tank.progress.find(p => p.stage === "Inspection Stage 1");
+      const inspectionStage2 = tank.progress.find(p => p.stage === "Inspection Stage 2");
+      const inspectionStage3 = tank.progress.find(p => p.stage === "Inspection Stage 3");
+      
+      const stageByProgress = 
+        (inspectionStage1 && inspectionStage1.status === "In Progress") ||
+        (inspectionStage2 && inspectionStage2.status === "In Progress") ||
+        (inspectionStage3 && inspectionStage3.status === "In Progress");
+      
+      return stageByProperty || stageByProgress;
+    };
+
+    // Check sub-tanks for inspection stages
+    const isGroupTankInInspection = (tank: WaterTank) => {
+      if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
+        // Check if ANY sub-tank is in inspection stage
+        return tank.subTanks.some(subTank => {
+          const inspectionStage1 = subTank.progress.find(p => p.stage === "Inspection Stage 1");
+          const inspectionStage2 = subTank.progress.find(p => p.stage === "Inspection Stage 2");
+          const inspectionStage3 = subTank.progress.find(p => p.stage === "Inspection Stage 3");
+          
+          return (
+            (inspectionStage1 && inspectionStage1.status === "In Progress") ||
+            (inspectionStage2 && inspectionStage2.status === "In Progress") ||
+            (inspectionStage3 && inspectionStage3.status === "In Progress")
+          );
+        });
+      }
+      
+      return isInInspectionStage(tank);
+    };
+
     // Filter tanks that are in inspection stage but not fully completed
     const n00Ready = Object.values(n00TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isGroupTankCompleted(tank)
+      (tank) => isGroupTankInInspection(tank) && !isGroupTankCompleted(tank)
     );
 
     const n10Ready = Object.values(n10TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isGroupTankCompleted(tank)
+      (tank) => isGroupTankInInspection(tank) && !isGroupTankCompleted(tank)
     );
 
     const n20Ready = Object.values(n20TanksData).filter(
-      (tank) => (tank.currentStage === "Inspection Stage 1" || 
-                tank.currentStage === "Inspection Stage 2" || 
-                tank.currentStage === "Inspection Stage 3") && 
-                !isGroupTankCompleted(tank)
+      (tank) => isGroupTankInInspection(tank) && !isGroupTankCompleted(tank)
     );
     
     return {
