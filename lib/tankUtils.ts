@@ -40,15 +40,35 @@ export const getTankColor = (tank: WaterTank) => {
 };
 
 /**
- * Gets applicable stages for a tank based on its type
+ * Gets applicable stages for a tank based on its type and ID
  */
 export const getApplicableStages = (tank: any): ProgressStage[] => {
   const isSubTank = tank.isSubTank;
   const parentId = tank.parentId;
+  const tankId = tank.id;
+  const tankType = tank.type;
   
-  // For EB1-Exterior tanks, only specific stages are applicable
+  // Special case for EB16-STE-089 tanks that need dwall anchoring stages
   if (
-    (tank.id.includes("EB1") && tank.id.includes("Exterior")) ||
+    (tankId && tankId.includes("EB16-STE-089")) ||
+    (isSubTank && parentId && parentId.includes("EB16-STE-089"))
+  ) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Dwall anchorage removal",
+      "Dwall anchorage waterproofing",
+      "Grout openings in wall",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2",
+      "Inspection Stage 3"
+    ] as ProgressStage[];
+  }
+  
+  // For EB1-Exterior tanks (Fire Water tanks), only specific stages are applicable
+  if (
+    (tankId && tankId.includes("EB1") && tankId.includes("Exterior")) ||
     (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Exterior"))
   ) {
     return [
@@ -61,21 +81,11 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     ] as ProgressStage[];
   }
 
-  // For drinking water tanks, exclude certain stages
-  if (tank.type === "WATER TANKS") {
-    return [
-      "Formwork Removal",
-      "Repair and Cleaning",
-      "Pump Anchors",
-      "Inspection Stage 1",
-      "Waterproofing",
-      "Inspection Stage 2",
-      "Inspection Stage 3"
-    ] as ProgressStage[];
-  }
-
-  // For inspection pits, exclude certain stages
-  if (tank.type === "MANHOLE") {
+  // For EB1-Interior tanks (Sanitary Water), exclude certain stages
+  if (
+    (tankId && tankId.includes("EB1") && tankId.includes("Interior")) ||
+    (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Interior"))
+  ) {
     return [
       "Formwork Removal",
       "Repair and Cleaning",
@@ -86,15 +96,39 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     ] as ProgressStage[];
   }
 
-  // Default all stages for other tank types
+  // For EB9 tanks (Water deposit tanks), exclude certain stages
+  if (
+    (tankId && tankId.includes("EB9")) ||
+    (isSubTank && parentId && parentId.includes("EB9"))
+  ) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2",
+      "Inspection Stage 3"
+    ] as ProgressStage[];
+  }
+
+  // For Rain Water - Valve tanks, no pump anchors or slope
+  if (tankType && tankType.includes("Rain Water") && tankType.includes("Valve")) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2",
+      "Inspection Stage 3"
+    ] as ProgressStage[];
+  }
+
+  // Standard tank stages (Sewage Water, Rain Water Pump, etc.)
   return [
     "Formwork Removal",
     "Repair and Cleaning",
     "Pump Anchors",
     "Slope",
-    "Dwall anchorage removal",
-    "Dwall anchorage waterproofing",
-    "Grout openings in wall",
     "Inspection Stage 1",
     "Waterproofing",
     "Inspection Stage 2",

@@ -9,7 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { ProgressStage, WaterTank } from '@/app/data/tanks';
-import { getTankStageStatus } from '@/lib/tankUtils';
+import { getTankStageStatus, getApplicableStages } from '@/lib/tankUtils';
+
+// Extended WaterTank interface for internal use
+interface ExtendedWaterTank extends WaterTank {
+  currentSubTankIndex?: number;
+}
 
 interface TankDetailsProps {
   tank: WaterTank | null;
@@ -47,11 +52,14 @@ const TankDetails: React.FC<TankDetailsProps> = ({
 
   if (!tank) return null;
 
+  // Cast tank to extended type
+  const extendedTank = tank as ExtendedWaterTank;
+
   // Get applicable stages for the currently selected tank/sub-tank
   const getStageClasses = (stageName: string) => {
     const result = getTankStageStatus({
-      ...tank,
-      currentSubTankIndex: tank.isGrouped ? activeSubTankIndex : undefined
+      ...extendedTank,
+      currentSubTankIndex: extendedTank.isGrouped ? activeSubTankIndex : undefined
     }, stageName);
     
     if (!result.applicable) return "text-gray-300 line-through";
@@ -67,8 +75,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({
   // Get checkbox icon for each stage
   const getStageIcon = (stageName: string) => {
     const result = getTankStageStatus({
-      ...tank,
-      currentSubTankIndex: tank.isGrouped ? activeSubTankIndex : undefined
+      ...extendedTank,
+      currentSubTankIndex: extendedTank.isGrouped ? activeSubTankIndex : undefined
     }, stageName);
     
     if (!result.applicable) return null;
@@ -85,8 +93,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({
 
   // Get the active sub-tank if this is a grouped tank
   const getActiveSubTank = () => {
-    if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
-      return tank.subTanks[activeSubTankIndex];
+    if (extendedTank.isGrouped && extendedTank.subTanks && extendedTank.subTanks.length > 0) {
+      return extendedTank.subTanks[activeSubTankIndex];
     }
     return null;
   };
@@ -95,25 +103,28 @@ const TankDetails: React.FC<TankDetailsProps> = ({
   const getCurrentTankName = () => {
     const subTank = getActiveSubTank();
     if (subTank) {
-      return `${tank.name} - ${subTank.name}`;
+      return `${extendedTank.name} - ${subTank.name}`;
     }
-    return tank.name;
+    return extendedTank.name;
   };
 
-  // All stages for rendering (not filtered)
-  const allStages: ProgressStage[] = [
-    "Formwork Removal",
-    "Repair and Cleaning",
-    "Pump Anchors",
-    "Slope",
-    "Dwall anchorage removal",
-    "Dwall anchorage waterproofing",
-    "Grout openings in wall",
-    "Inspection Stage 1",
-    "Waterproofing",
-    "Inspection Stage 2",
-    "Inspection Stage 3",
-  ] as ProgressStage[];
+  // Get applicable stages based on tank type and ID
+  const getFilteredStages = () => {
+    const currentTank = extendedTank.isGrouped && extendedTank.subTanks && extendedTank.currentSubTankIndex !== undefined
+      ? extendedTank.subTanks[extendedTank.currentSubTankIndex]
+      : extendedTank;
+    
+    const tankToCheck = {
+      ...currentTank,
+      isSubTank: extendedTank.isGrouped ? true : false,
+      parentId: extendedTank.isGrouped ? extendedTank.id : undefined
+    };
+    
+    return getApplicableStages(tankToCheck);
+  };
+
+  // Get the applicable stages for the current tank
+  const applicableStages = getFilteredStages();
 
   return (
     <>
@@ -122,16 +133,16 @@ const TankDetails: React.FC<TankDetailsProps> = ({
           <DialogHeader>
             <DialogTitle className="text-center">{getCurrentTankName()}</DialogTitle>
             <DialogDescription className="text-center">
-              {tank.location}
+              {extendedTank.location}
             </DialogDescription>
           </DialogHeader>
 
           {/* Sub-tank selector for grouped tanks */}
-          {tank.isGrouped && tank.subTanks && tank.subTanks.length > 0 && (
+          {extendedTank.isGrouped && extendedTank.subTanks && extendedTank.subTanks.length > 0 && (
             <div className="mb-4">
               <div className="text-sm font-medium mb-2">Sub-Tanks:</div>
               <div className="flex flex-wrap gap-2">
-                {tank.subTanks.map((subTank, index) => (
+                {extendedTank.subTanks.map((subTank, index) => (
                   <Button
                     key={subTank.id}
                     variant={index === activeSubTankIndex ? "default" : "outline"}
@@ -146,7 +157,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({
           )}
 
           <div className="space-y-3">
-            {allStages.map((stage) => (
+            {applicableStages.map((stage) => (
               <div
                 key={stage}
                 className={`flex items-center justify-between p-2 rounded hover:bg-gray-100 ${getStageClasses(stage)}`}
