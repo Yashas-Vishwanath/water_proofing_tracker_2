@@ -25,6 +25,9 @@ import { useTanksData } from "@/hooks/useTanksData"
 import { useGroupedTankProgress } from "@/hooks/useGroupedTankProgress"
 import { isFullyCompleted } from "@/lib/tankUtils"
 
+// Import the getTankColor function from tankUtils
+import { getTankColor } from "@/lib/tankUtils"
+
 // Add this type declaration for the global XLSX object
 declare global {
   interface Window {
@@ -148,26 +151,6 @@ export default function ConstructionTracker() {
       console.error('Error saving tanks data:', error);
     }
   };
-
-  // Function to get tank color based on status
-  const getTankColor = (tank: WaterTank) => {
-    // Check if all tasks are completed
-    const allCompleted = tank.progress.every((p) => p.status === "Completed")
-    if (allCompleted) {
-      return "bg-green-600" // Green for completed tanks
-    }
-
-    // Check if in inspection stage
-    const isInspection = tank.currentStage === "Inspection Stage 1" || 
-                         tank.currentStage === "Inspection Stage 2" || 
-                         tank.currentStage === "Inspection Stage 3"
-    if (isInspection) {
-      return "bg-purple-600" // Purple for inspection stages
-    }
-
-    // Default is red for ongoing operations
-    return "bg-red-600"
-  }
 
   // Function to handle exporting to spreadsheet
   const handleExportToSpreadsheet = () => {
@@ -862,24 +845,25 @@ export default function ConstructionTracker() {
             updatedProgress[i] = { ...updatedProgress[i], status: "Not Started" };
           }
           
-          // Set previous stage as In Progress, if there is one
-          if (stageIndex > 0) {
-            const prevStage = applicableStages[stageIndex - 1];
+          // Determine the new current stage - find the last completed stage
+          let newCurrentStageIndex = stageIndex - 1;
+          while (newCurrentStageIndex >= 0) {
+            const prevStage = applicableStages[newCurrentStageIndex];
             const prevStageIndex = updatedProgress.findIndex(p => p.stage === prevStage);
             
-            if (prevStageIndex !== -1) {
-              updatedProgress[prevStageIndex] = { 
-                ...updatedProgress[prevStageIndex], 
-                status: "In Progress" 
-              };
+            if (prevStageIndex !== -1 && updatedProgress[prevStageIndex].status === "Completed") {
+              break; // Found the last completed stage
             }
+            newCurrentStageIndex--;
           }
+          
+          // If no completed stages found, use the first stage
+          const newCurrentStage = newCurrentStageIndex >= 0 
+            ? applicableStages[newCurrentStageIndex] 
+            : applicableStages[0];
           
           // Create a copy of the sub-tanks array
           const updatedSubTanks = [...updatedTank.subTanks];
-          
-          // Determine the new current stage
-          const newCurrentStage = stageIndex > 0 ? applicableStages[stageIndex - 1] : applicableStages[0];
           
           updatedSubTanks[subTankIndex] = {
             ...updatedSubTank,
@@ -921,21 +905,22 @@ export default function ConstructionTracker() {
           updatedProgress[i] = { ...updatedProgress[i], status: "Not Started" };
         }
         
-        // Set previous stage as In Progress, if there is one
-        if (stageInApplicableIndex > 0) {
-          const prevStage = applicableStages[stageInApplicableIndex - 1];
+        // Determine the new current stage - find the last completed stage
+        let newCurrentStageIndex = stageInApplicableIndex - 1;
+        while (newCurrentStageIndex >= 0) {
+          const prevStage = applicableStages[newCurrentStageIndex];
           const prevStageIndex = updatedProgress.findIndex(p => p.stage === prevStage);
           
-          if (prevStageIndex !== -1) {
-            updatedProgress[prevStageIndex] = { 
-              ...updatedProgress[prevStageIndex], 
-              status: "In Progress" 
-            };
+          if (prevStageIndex !== -1 && updatedProgress[prevStageIndex].status === "Completed") {
+            break; // Found the last completed stage
           }
+          newCurrentStageIndex--;
         }
         
-        // Determine the new current stage
-        const newCurrentStage = stageInApplicableIndex > 0 ? applicableStages[stageInApplicableIndex - 1] : applicableStages[0];
+        // If no completed stages found, use the first stage
+        const newCurrentStage = newCurrentStageIndex >= 0 
+          ? applicableStages[newCurrentStageIndex] 
+          : applicableStages[0];
         
         updatedTank.progress = updatedProgress;
         updatedTank.currentStage = newCurrentStage;

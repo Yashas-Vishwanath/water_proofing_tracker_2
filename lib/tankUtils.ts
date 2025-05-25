@@ -9,15 +9,55 @@ import {
  * Determines the color of a tank based on its progress status
  */
 export const getTankColor = (tank: WaterTank) => {
-  // Special case for grouped tanks with sub-tanks - must check sub-tanks
+  // Special case for grouped tanks with sub-tanks
   if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
-    // Consider the tank complete only if all sub-tanks are complete
-    const allSubTanksCompleted = tank.subTanks.every(subTank => 
-      subTank.progress.every(p => p.status === "Completed")
-    );
+    // Use the currentSubTankIndex if provided, otherwise check all sub-tanks
+    const currentSubTankIndex = (tank as any).currentSubTankIndex;
     
-    if (allSubTanksCompleted) {
-      return "bg-green-600"; // Green for completed tanks
+    if (currentSubTankIndex !== undefined) {
+      // If a specific sub-tank is active, use its status
+      const subTank = tank.subTanks[currentSubTankIndex];
+      if (subTank) {
+        // Check if all tasks are completed for this sub-tank
+        const allCompleted = subTank.progress.every(p => p.status === "Completed");
+        if (allCompleted) {
+          return "bg-green-600"; // Green for completed sub-tank
+        }
+        
+        // Check if in inspection stage
+        const isInspection = subTank.currentStage === "Inspection Stage 1" || 
+                             subTank.currentStage === "Inspection Stage 2" || 
+                             subTank.currentStage === "Inspection Stage 3";
+        if (isInspection) {
+          return "bg-purple-600"; // Purple for inspection stages
+        }
+        
+        // Default is red for ongoing operations
+        return "bg-red-600";
+      }
+    } else {
+      // Consider the tank complete only if all sub-tanks are complete
+      const allSubTanksCompleted = tank.subTanks.every(subTank => 
+        subTank.progress.every(p => p.status === "Completed")
+      );
+      
+      if (allSubTanksCompleted) {
+        return "bg-green-600"; // Green for completed tanks
+      }
+      
+      // Check if any sub-tank is in inspection stage
+      const anyInInspection = tank.subTanks.some(subTank => 
+        subTank.currentStage === "Inspection Stage 1" || 
+        subTank.currentStage === "Inspection Stage 2" || 
+        subTank.currentStage === "Inspection Stage 3"
+      );
+      
+      if (anyInInspection) {
+        return "bg-purple-600"; // Purple if any sub-tank is in inspection
+      }
+      
+      // Default to red for grouped tanks with incomplete sub-tanks
+      return "bg-red-600";
     }
   } else {
     // Check if all tasks are completed for regular tanks
@@ -25,14 +65,14 @@ export const getTankColor = (tank: WaterTank) => {
     if (allCompleted) {
       return "bg-green-600"; // Green for completed tanks
     }
-  }
-
-  // Check if in inspection stage
-  const isInspection = tank.currentStage === "Inspection Stage 1" || 
-                       tank.currentStage === "Inspection Stage 2" || 
-                       tank.currentStage === "Inspection Stage 3";
-  if (isInspection) {
-    return "bg-purple-600"; // Purple for inspection stages
+    
+    // Check if in inspection stage
+    const isInspection = tank.currentStage === "Inspection Stage 1" || 
+                        tank.currentStage === "Inspection Stage 2" || 
+                        tank.currentStage === "Inspection Stage 3";
+    if (isInspection) {
+      return "bg-purple-600"; // Purple for inspection stages
+    }
   }
 
   // Default is red for ongoing operations
