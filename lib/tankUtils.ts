@@ -48,7 +48,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
   const tankId = tank.id;
   const tankType = tank.type;
   
-  // Special case for EB16-STE-089 tanks that need dwall anchoring stages
+  // Special case for EB16-STE-089 tanks that need all stages
   if (
     (tankId && tankId.includes("EB16-STE-089")) ||
     (isSubTank && parentId && parentId.includes("EB16-STE-089"))
@@ -66,23 +66,9 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     ] as ProgressStage[];
   }
   
-  // For EB1-Exterior tanks (Fire Water tanks), only specific stages are applicable
+  // For Sanitary Water tanks (EB1-Interior)
   if (
-    (tankId && tankId.includes("EB1") && tankId.includes("Exterior")) ||
-    (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Exterior"))
-  ) {
-    return [
-      "Formwork Removal",
-      "Repair and Cleaning",
-      "Inspection Stage 1",
-      "Waterproofing",
-      "Inspection Stage 2",
-      "Inspection Stage 3"
-    ] as ProgressStage[];
-  }
-
-  // For EB1-Interior tanks (Sanitary Water), exclude certain stages
-  if (
+    (tankType && tankType.includes("Sanitary Water")) ||
     (tankId && tankId.includes("EB1") && tankId.includes("Interior")) ||
     (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Interior"))
   ) {
@@ -91,13 +77,28 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
-      "Inspection Stage 2",
-      "Inspection Stage 3"
+      "Inspection Stage 2"
     ] as ProgressStage[];
   }
 
-  // For EB9 tanks (Water deposit tanks), exclude certain stages
+  // For Fire Water tanks (EB1-Exterior)
   if (
+    (tankType && tankType.includes("Fire Water")) ||
+    (tankId && tankId.includes("EB1") && tankId.includes("Exterior")) ||
+    (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Exterior"))
+  ) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2"
+    ] as ProgressStage[];
+  }
+
+  // For Water deposit tanks (EB9)
+  if (
+    (tankType && tankType.includes("Water deposit")) ||
     (tankId && tankId.includes("EB9")) ||
     (isSubTank && parentId && parentId.includes("EB9"))
   ) {
@@ -106,24 +107,55 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
-      "Inspection Stage 2",
-      "Inspection Stage 3"
+      "Inspection Stage 2"
     ] as ProgressStage[];
   }
 
-  // For Rain Water - Valve tanks, no pump anchors or slope
+  // For Rain Water - Pump tanks
+  if (tankType && tankType.includes("Rain Water") && tankType.includes("Pump")) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2"
+    ] as ProgressStage[];
+  }
+  
+  // For Rain Water - Valve tanks
   if (tankType && tankType.includes("Rain Water") && tankType.includes("Valve")) {
     return [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
-      "Inspection Stage 2",
-      "Inspection Stage 3"
+      "Inspection Stage 2"
     ] as ProgressStage[];
   }
 
-  // Standard tank stages (Sewage Water, Rain Water Pump, etc.)
+  // For Chiller Room tanks
+  if (tankType && tankType.includes("Chiller Room")) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2"
+    ] as ProgressStage[];
+  }
+
+  // For Gardenrona tanks
+  if (tankType && (tankType.includes("Gardenrona") || tankType.includes("Gardenroba"))) {
+    return [
+      "Formwork Removal",
+      "Repair and Cleaning",
+      "Inspection Stage 1",
+      "Waterproofing",
+      "Inspection Stage 2"
+    ] as ProgressStage[];
+  }
+
+  // Standard Sewage Water tanks - with pump pits
   return [
     "Formwork Removal",
     "Repair and Cleaning",
@@ -131,8 +163,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     "Slope",
     "Inspection Stage 1",
     "Waterproofing",
-    "Inspection Stage 2",
-    "Inspection Stage 3"
+    "Inspection Stage 2"
   ] as ProgressStage[];
 };
 

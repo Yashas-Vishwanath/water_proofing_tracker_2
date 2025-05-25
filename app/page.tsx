@@ -252,15 +252,16 @@ export default function ConstructionTracker() {
               <th>Type of Tank</th>
               <th>Formwork Removal</th>
               <th>Repair and Cleaning</th>
+              <th>Dwall Anchorage Removal</th>
+              <th>Dwall Anchorage Waterproofing</th>
+              <th>Filling Dwall openings</th>
               <th>Pump Anchors</th>
               <th>Slope</th>
-              <th>Dwall anchorage removal</th>
-              <th>Dwall anchorage waterproofing</th>
-              <th>Grout openings in wall</th>
               <th>Inspection Stage 1</th>
-              <th colspan="3">Waterproofing</th>
+              <th>Waterproofing Walls and Floor</th>
+              <th>Only Walls</th>
               <th>Inspection Stage 2</th>
-              <th colspan="2">Waterproofing</th>
+              <th>Waterproofing Only Floor</th>
               <th>Inspection Stage 3</th>
             </tr>
             <tr>
@@ -274,15 +275,13 @@ export default function ConstructionTracker() {
               <th></th>
               <th></th>
               <th></th>
-              <th></th>
-              <th></th>
-              <th></th>
-              <th>Walls and Floor</th>
-              <th>Only Walls</th>
               <th>PUMP PITS</th>
               <th></th>
-              <th>Only Walls</th>
-              <th>Only Floor</th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
               <th></th>
             </tr>
           </thead>
@@ -324,21 +323,21 @@ export default function ConstructionTracker() {
         const stageProgress = tank.progress?.find((p: any) => p.stage === stageName);
         
         if (isEB16Tank) {
-          // EB16 tanks have all stages except waterproofing of walls/floors
-          if (stageName === "Waterproofing of walls" || stageName === "Waterproofing of floor") {
+          // EB16 tanks have dwall anchoring stages
+          if (stageName === "Pump Anchors" || stageName === "Slope") {
             return { status: "N/A", applicable: false };
           }
         } else if (isRainWaterValve || isEB1Interior || isEB1Exterior || isEB9Tank) {
           // These tank types don't have pump anchors or slope
           if (stageName === "Pump Anchors" || stageName === "Slope" || 
               stageName === "Dwall anchorage removal" || stageName === "Dwall anchorage waterproofing" || 
-              stageName === "Grout openings in wall") {
+              stageName === "Grout openings in wall" || stageName === "Inspection Stage 3") {
             return { status: "N/A", applicable: false };
           }
         } else {
           // Standard tanks don't have dwall anchorage or grout openings
           if (stageName === "Dwall anchorage removal" || stageName === "Dwall anchorage waterproofing" || 
-              stageName === "Grout openings in wall") {
+              stageName === "Grout openings in wall" || stageName === "Inspection Stage 3") {
             return { status: "N/A", applicable: false };
           }
         }
@@ -358,18 +357,16 @@ export default function ConstructionTracker() {
           <td>${tankType}</td>
           <td class="${getCellClass(getStageStatus("Formwork Removal"))}">${getStageStatus("Formwork Removal").status !== "N/A" ? getStageStatus("Formwork Removal").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Repair and Cleaning"))}">${getStageStatus("Repair and Cleaning").status !== "N/A" ? getStageStatus("Repair and Cleaning").status : "n/a"}</td>
-          <td class="${getCellClass(getStageStatus("Pump Anchors"))}">${getStageStatus("Pump Anchors").status !== "N/A" ? getStageStatus("Pump Anchors").status : "n/a"}</td>
-          <td class="${getCellClass(getStageStatus("Slope"))}">${getStageStatus("Slope").status !== "N/A" ? getStageStatus("Slope").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Dwall anchorage removal"))}">${getStageStatus("Dwall anchorage removal").status !== "N/A" ? getStageStatus("Dwall anchorage removal").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Dwall anchorage waterproofing"))}">${getStageStatus("Dwall anchorage waterproofing").status !== "N/A" ? getStageStatus("Dwall anchorage waterproofing").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Grout openings in wall"))}">${getStageStatus("Grout openings in wall").status !== "N/A" ? getStageStatus("Grout openings in wall").status : "n/a"}</td>
+          <td class="${getCellClass(getStageStatus("Pump Anchors"))}">${getStageStatus("Pump Anchors").status !== "N/A" ? getStageStatus("Pump Anchors").status : "n/a"}</td>
+          <td class="${getCellClass(getStageStatus("Slope"))}">${getStageStatus("Slope").status !== "N/A" ? getStageStatus("Slope").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Inspection Stage 1"))}">${getStageStatus("Inspection Stage 1").status !== "N/A" ? getStageStatus("Inspection Stage 1").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Waterproofing"))}">${getStageStatus("Waterproofing").status !== "N/A" ? getStageStatus("Waterproofing").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Waterproofing of walls"))}">${getStageStatus("Waterproofing of walls").status !== "N/A" ? getStageStatus("Waterproofing of walls").status : "n/a"}</td>
-          <td>n/a</td>
           <td class="${getCellClass(getStageStatus("Inspection Stage 2"))}">${getStageStatus("Inspection Stage 2").status !== "N/A" ? getStageStatus("Inspection Stage 2").status : "n/a"}</td>
-          <td>n/a</td>
-          <td>n/a</td>
+          <td class="${getCellClass(getStageStatus("Waterproofing of floor"))}">${getStageStatus("Waterproofing of floor").status !== "N/A" ? getStageStatus("Waterproofing of floor").status : "n/a"}</td>
           <td class="${getCellClass(getStageStatus("Inspection Stage 3"))}">${getStageStatus("Inspection Stage 3").status !== "N/A" ? getStageStatus("Inspection Stage 3").status : "n/a"}</td>
         </tr>
       `;
@@ -522,7 +519,7 @@ export default function ConstructionTracker() {
     const allTanks: any[] = getAllTanks();
 
     let csvContent =
-      "Level,Type of Tank,Parent Tank,ID,Formwork Removal,Repair and Cleaning,Pump Anchors,Slope,Dwall anchorage removal,Dwall anchorage waterproofing,Grout openings in wall,Inspection Stage 1,Waterproofing,Waterproofing of walls,Inspection Stage 2,Waterproofing of floor,Inspection Stage 3\n"
+      "Level,Type of Tank,Parent Tank,ID,Formwork Removal,Repair and Cleaning,Dwall Anchorage Removal,Dwall Anchorage Waterproofing,Filling Dwall openings,Pump Anchors,Slope,Inspection Stage 1,Waterproofing Walls and Floor,Waterproofing Only Walls,Inspection Stage 2,Waterproofing Only Floor,Inspection Stage 3\n"
 
     allTanks.forEach((tank: any) => {
       const tankId = tank.id;
@@ -531,11 +528,11 @@ export default function ConstructionTracker() {
       // Get status for each stage (or N/A if not applicable for this tank type)
       const formwork = getTankStageStatus(tank, "Formwork Removal");
       const repair = getTankStageStatus(tank, "Repair and Cleaning");
-      const pump = getTankStageStatus(tank, "Pump Anchors");
-      const slope = getTankStageStatus(tank, "Slope");
       const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
       const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
       const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
+      const pump = getTankStageStatus(tank, "Pump Anchors");
+      const slope = getTankStageStatus(tank, "Slope");
       const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
       const waterproofing = getTankStageStatus(tank, "Waterproofing");
       const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
@@ -543,7 +540,7 @@ export default function ConstructionTracker() {
       const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
       const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
 
-      csvContent += `${tank.level},${tank.type},${parentInfo},${tankId},${formwork.status},${repair.status},${pump.status},${slope.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
+      csvContent += `${tank.level},${tank.type},${parentInfo},${tankId},${formwork.status},${repair.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${pump.status},${slope.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
     });
 
     return csvContent;
@@ -1317,16 +1314,16 @@ export default function ConstructionTracker() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formwork Removal</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repair and Cleaning</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall Anchorage Removal</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall Anchorage Waterproofing</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filling Dwall Openings</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pump Anchors</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slope</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage removal</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dwall anchorage waterproofing</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grout openings in wall</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 1</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of walls</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing Walls and Floor</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing Only Walls</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 2</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing of floor</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing Only Floor</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 3</th>
                 </tr>
               </thead>
@@ -1338,11 +1335,11 @@ export default function ConstructionTracker() {
                   // Get each stage status with applicable flag
                   const formwork = getTankStageStatus(tank, "Formwork Removal");
                   const repair = getTankStageStatus(tank, "Repair and Cleaning");
-                  const pump = getTankStageStatus(tank, "Pump Anchors");
-                  const slope = getTankStageStatus(tank, "Slope");
                   const dwallRemoval = getTankStageStatus(tank, "Dwall anchorage removal");
                   const dwallWaterproofing = getTankStageStatus(tank, "Dwall anchorage waterproofing");
                   const groutOpenings = getTankStageStatus(tank, "Grout openings in wall");
+                  const pump = getTankStageStatus(tank, "Pump Anchors");
+                  const slope = getTankStageStatus(tank, "Slope");
                   const inspection1 = getTankStageStatus(tank, "Inspection Stage 1");
                   const waterproofing = getTankStageStatus(tank, "Waterproofing");
                   const waterproofingWalls = getTankStageStatus(tank, "Waterproofing of walls");
@@ -1370,11 +1367,11 @@ export default function ConstructionTracker() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{tankId}</td>
                       <td className={getCellClass(formwork)}>{formwork.status}</td>
                       <td className={getCellClass(repair)}>{repair.status}</td>
-                      <td className={getCellClass(pump)}>{pump.status}</td>
-                      <td className={getCellClass(slope)}>{slope.status}</td>
                       <td className={getCellClass(dwallRemoval)}>{dwallRemoval.status}</td>
                       <td className={getCellClass(dwallWaterproofing)}>{dwallWaterproofing.status}</td>
                       <td className={getCellClass(groutOpenings)}>{groutOpenings.status}</td>
+                      <td className={getCellClass(pump)}>{pump.status}</td>
+                      <td className={getCellClass(slope)}>{slope.status}</td>
                       <td className={getCellClass(inspection1)}>{inspection1.status}</td>
                       <td className={getCellClass(waterproofing)}>{waterproofing.status}</td>
                       <td className={getCellClass(waterproofingWalls)}>{waterproofingWalls.status}</td>
