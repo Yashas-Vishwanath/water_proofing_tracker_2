@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { level, tankId } = params;
     
     // Validate level
-    if (!['n00Tanks', 'n10Tanks', 'n20Tanks'].includes(level)) {
+    if (!['n00Tanks', 'n10Tanks', 'n20Tanks', 'n30Tanks'].includes(level)) {
       return NextResponse.json(
         { error: 'Invalid level' },
         { status: 400 }
@@ -47,7 +47,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const { level, tankId } = params;
     
     // Validate level
-    if (!['n00Tanks', 'n10Tanks', 'n20Tanks'].includes(level)) {
+    if (!['n00Tanks', 'n10Tanks', 'n20Tanks', 'n30Tanks'].includes(level)) {
       return NextResponse.json(
         { error: 'Invalid level' },
         { status: 400 }

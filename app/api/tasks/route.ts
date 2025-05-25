@@ -16,10 +16,22 @@ export async function GET() {
   }
 }
 
-// POST handler for updating all tasks
+// POST handler to update all tanks data
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as TasksData;
+    // Parse the request body
+    const body = await request.json();
+    
+    // Validate the body structure
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+    
+    // Destructure and validate the expected tank levels
+    const { n00Tanks = {}, n10Tanks = {}, n20Tanks = {}, n30Tanks = {}, ...otherLevels } = body;
     
     // Validate the data
     if (!body || typeof body !== 'object') {
@@ -30,11 +42,11 @@ export async function POST(request: Request) {
     }
     
     // Ensure all required levels exist
-    const { n00Tanks = {}, n10Tanks = {}, n20Tanks = {}, ...otherLevels } = body;
     const validData: TasksData = {
       n00Tanks,
       n10Tanks,
       n20Tanks,
+      n30Tanks,
       ...otherLevels
     };
     

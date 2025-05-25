@@ -14,16 +14,19 @@ if (!fs.existsSync(DATA_DIR)) {
 // We'll need to require the compiled JavaScript from .next/server
 try {
   // First, require the compiled JavaScript
-  const tanksModule = require('../app/data/tanks');
+  const tanksModule = await import('../app/data/tanks');
+  console.log('Loaded tanks module');
   
-  // Extract the tank data objects
-  const { n00Tanks, n10Tanks, n20Tanks } = tanksModule;
+  // Extract the static tank data
+  const { n00Tanks, n10Tanks, n20Tanks, n30Tanks } = tanksModule;
+  console.log('Extracted static tank data');
   
   // Create the data structure for storage
   const tanksData = {
     n00Tanks,
     n10Tanks,
-    n20Tanks
+    n20Tanks,
+    n30Tanks
   };
   
   // Save the data to the local storage file

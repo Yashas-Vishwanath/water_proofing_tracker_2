@@ -5,7 +5,7 @@
 import { Redis } from '@upstash/redis';
 import localStorage from './local-storage';
 import { TasksData, WaterTank, StageProgress, allProgressStages } from '@/app/data/tanks';
-import { n00Tanks, n10Tanks, n20Tanks } from '@/app/data/tanks';
+import { n00Tanks, n10Tanks, n20Tanks, n30Tanks } from '@/app/data/tanks';
 
 // Default progress for new tanks
 const INITIAL_PROGRESS: StageProgress[] = allProgressStages.map(stage => ({
@@ -104,7 +104,8 @@ const storage: Storage = {
 const staticTanksByLevel: Record<string, Record<string, WaterTank>> = {
   n00Tanks,
   n10Tanks,
-  n20Tanks
+  n20Tanks,
+  n30Tanks
 };
 
 // Helper functions for tanks data
@@ -116,7 +117,8 @@ export async function getTanksData(): Promise<TasksData> {
     const combinedData: TasksData = {
       n00Tanks: {},
       n10Tanks: {},
-      n20Tanks: {}
+      n20Tanks: {},
+      n30Tanks: {}
     };
 
     // Process each level
@@ -141,7 +143,7 @@ export async function getTanksData(): Promise<TasksData> {
         } else {
           // In development, get from local storage
           console.log(`[DEBUG] Development mode - fetching ${level}/${tankId} from local storage`);
-          const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+          const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {}, n30Tanks: {} };
           tankState = allTanksData[level]?.[tankId] || {};
           
           console.log(`[DEBUG] Found tank state for ${level}/${tankId}: ${Object.keys(tankState).length > 0 ? 'yes' : 'no'}`);
@@ -233,7 +235,7 @@ export async function getTanksData(): Promise<TasksData> {
     return combinedData;
   } catch (error) {
     console.error('Error getting tanks data:', error);
-    return { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+    return { n00Tanks: {}, n10Tanks: {}, n20Tanks: {}, n30Tanks: {} };
   }
 }
 
@@ -309,7 +311,7 @@ export async function getTank(level: string, tankId: string): Promise<WaterTank 
     } else {
       // In development, get from local storage
       console.log(`[DEBUG] Development mode - fetching from local storage`);
-      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {}, n30Tanks: {} };
       tankState = allTanksData[level]?.[tankId] || {};
       
       console.log(`[DEBUG] Found tank state: ${Object.keys(tankState).length > 0 ? 'yes' : 'no'}`);
@@ -417,7 +419,7 @@ export async function updateTank(level: string, tankId: string, updatedTank: Wat
     } else {
       // In development, update within local storage
       console.log(`[DEBUG] Development mode - saving to local storage`);
-      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {} };
+      const allTanksData = await storage.get('tanksData') || { n00Tanks: {}, n10Tanks: {}, n20Tanks: {}, n30Tanks: {} };
       
       if (!allTanksData[level]) {
         console.log(`[DEBUG] Creating level ${level} in tanksData`);

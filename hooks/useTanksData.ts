@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { WaterTank, n00Tanks, n10Tanks, n20Tanks } from '@/app/data/tanks';
+import { WaterTank, n00Tanks, n10Tanks, n20Tanks, n30Tanks } from '@/app/data/tanks';
 
 export interface TanksDataState {
   n00TanksData: Record<string, WaterTank>;

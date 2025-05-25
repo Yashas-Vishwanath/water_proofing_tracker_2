@@ -15,7 +15,8 @@ import {
   allProgressStages,
   n00Tanks,
   n10Tanks,
-  n20Tanks
+  n20Tanks,
+  n30Tanks
 } from "./data/tanks"
 
 // Import our new components and hooks
@@ -56,6 +57,7 @@ export default function ConstructionTracker() {
   const [n00TanksData, setN00TanksData] = useState<Record<string, WaterTank>>(n00Tanks)
   const [n10TanksData, setN10TanksData] = useState<Record<string, WaterTank>>(n10Tanks)
   const [n20TanksData, setN20TanksData] = useState<Record<string, WaterTank>>(n20Tanks)
+  const [n30TanksData, setN30TanksData] = useState<Record<string, WaterTank>>(n30Tanks)
 
   // Add a new state for the inspection dialog
   const [isInspectionDialogOpen, setIsInspectionDialogOpen] = useState(false)
@@ -103,6 +105,9 @@ export default function ConstructionTracker() {
           if (data.n20Tanks && Object.keys(data.n20Tanks).length > 0) {
             setN20TanksData(data.n20Tanks);
           }
+          if (data.n30Tanks && Object.keys(data.n30Tanks).length > 0) {
+            setN30TanksData(data.n30Tanks);
+          }
         } else {
           console.log("API returned non-OK status, initializing with default data");
           // If API fails, initialize with default data and save it to the API
@@ -136,6 +141,7 @@ export default function ConstructionTracker() {
           n00Tanks,
           n10Tanks,
           n20Tanks,
+          n30Tanks,
         }),
       });
 
@@ -147,6 +153,7 @@ export default function ConstructionTracker() {
       setN00TanksData(n00Tanks);
       setN10TanksData(n10Tanks);
       setN20TanksData(n20Tanks);
+      setN30TanksData(n30Tanks);
     } catch (error) {
       console.error('Error saving tanks data:', error);
     }
@@ -405,6 +412,7 @@ export default function ConstructionTracker() {
     processTanks(n00TanksData, "N00");
     processTanks(n10TanksData, "N10");
     processTanks(n20TanksData, "N20");
+    processTanks(n30TanksData, "N30");
     
     return tanks;
   };
@@ -640,11 +648,15 @@ export default function ConstructionTracker() {
       (tank) => isGroupTankInInspection(tank) && !isGroupTankCompleted(tank)
     );
     
+    const n30Ready = Object.values(n30TanksData).filter(
+      (tank) => isGroupTankInInspection(tank) && !isGroupTankCompleted(tank)
+    );
+    
     return {
       n00: n00Ready,
       n10: n10Ready,
       n20: n20Ready,
-      n30: [], // No tanks in N30 yet
+      n30: n30Ready,
     }
   };
 
@@ -658,6 +670,8 @@ export default function ConstructionTracker() {
       tank = n10TanksData[tankId]
     } else if (activeSection === "N20") {
       tank = n20TanksData[tankId]
+    } else if (activeSection === "N30") {
+      tank = n30TanksData[tankId]
     }
 
     if (tank) {
@@ -1084,7 +1098,8 @@ export default function ConstructionTracker() {
     // First update local state
     const levelKey = activeSection === "N00" ? "n00Tanks" : 
                     activeSection === "N10" ? "n10Tanks" : 
-                    activeSection === "N20" ? "n20Tanks" : null;
+                    activeSection === "N20" ? "n20Tanks" :
+                    activeSection === "N30" ? "n30Tanks" : null;
     
     if (!levelKey) return;
 
@@ -1107,6 +1122,11 @@ export default function ConstructionTracker() {
       }))
     } else if (activeSection === "N20") {
       setN20TanksData((prev) => ({
+        ...prev,
+        [cleanTank.id]: cleanTank,
+      }))
+    } else if (activeSection === "N30") {
+      setN30TanksData((prev) => ({
         ...prev,
         [cleanTank.id]: cleanTank,
       }))
@@ -1349,6 +1369,46 @@ export default function ConstructionTracker() {
                   {Object.values(n20TanksData).map((tank) => {
                     // No scaling needed as the coordinates are already for the target size
                     const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N20");
+                    return (
+                      <div
+                        key={tank.id}
+                        className="absolute"
+                        style={{
+                          top: `${position.top}px`,
+                          left: `${position.left}px`,
+                        }}
+                      >
+                        <div
+                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
+                          style={{
+                            width: `${tank.coordinates.width}px`,
+                            height: `${tank.coordinates.height}px`,
+                          }}
+                          onClick={() => handleTankClick(tank.id)}
+                        ></div>
+                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {activeSection === "N30" && (
+              <div className="overflow-auto">
+                <div className="relative" style={{ width: "1280px", height: "900px" }}>
+                  <Image 
+                    src="/images/n10.jpg" 
+                    alt="N30 Level Map (using N10 background)" 
+                    width={1280} 
+                    height={900} 
+                    className="w-full h-auto"
+                    style={{ maxWidth: "none" }}
+                  />
+                  {/* Render clickable boxes for each tank */}
+                  {Object.values(n30TanksData).map((tank) => {
+                    // No scaling needed as the coordinates are already for the target size
+                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N30");
                     return (
                       <div
                         key={tank.id}

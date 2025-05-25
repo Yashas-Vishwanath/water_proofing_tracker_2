@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { n00Tanks, n10Tanks, n20Tanks } from '@/app/data/tanks';
+import { n00Tanks, n10Tanks, n20Tanks, n30Tanks } from '@/app/data/tanks';
 
 export default function ApiTest() {
   const [helloData, setHelloData] = useState<any>(null);
@@ -56,7 +56,8 @@ export default function ApiTest() {
       const defaultTanks = {
         n00Tanks,
         n10Tanks,
-        n20Tanks
+        n20Tanks,
+        n30Tanks
       };
 
       // Send the data to the API endpoint
