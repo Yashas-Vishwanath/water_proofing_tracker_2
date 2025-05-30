@@ -69,14 +69,10 @@ export default function ConstructionTracker() {
   const targetWidth = 1280;
   const targetHeight = 900;
   
-  // Since we're now using images that are already correctly sized (1280x900),
-  // we don't need to scale coordinates anymore
-  const getScaledPosition = (top: number, left: number, level: string) => {
-    // Return the positions directly without scaling
-    return {
-      top: top,
-      left: left
-    };
+  // Function to get scaled position for tank boxes
+  const getScaledPosition = (top: number, left: number, section: string) => {
+    // No scaling needed as coordinates are already for the target size
+    return { top, left };
   };
 
   // Use our custom hooks
@@ -1496,6 +1492,65 @@ export default function ConstructionTracker() {
     }
   }
 
+  // Helper function to check if a tank has completed ladder installation
+  const hasCompletedLadderInstallation = (tank: WaterTank) => {
+    // For grouped tanks with sub-tanks
+    if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
+      // Check if ALL sub-tanks have completed ladder installation
+      return tank.subTanks.every(subTank => {
+        const ladderInstallation = subTank.progress.find(p => p.stage === "Ladder Installation");
+        return ladderInstallation?.status === "Completed";
+      });
+    }
+    
+    // For regular tanks
+    const ladderInstallation = tank.progress.find(p => p.stage === "Ladder Installation");
+    return ladderInstallation?.status === "Completed";
+  };
+
+  // Render the tank map boxes for the active section
+  const renderTankBoxes = (tanks: Record<string, WaterTank>) => {
+    return Object.values(tanks).map((tank) => {
+      const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, activeSection || "N00");
+      return (
+        <div
+          key={tank.id}
+          className="absolute"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+          }}
+        >
+          <div
+            className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black relative`}
+            style={{
+              width: `${tank.coordinates.width}px`,
+              height: `${tank.coordinates.height}px`,
+            }}
+            onClick={() => handleTankClick(tank.id)}
+          >
+            {/* Yellow circle indicator for completed ladder installation */}
+            {hasCompletedLadderInstallation(tank) && (
+              <div 
+                className="absolute bg-yellow-400 rounded-full"
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  border: '1px solid rgba(0, 0, 0, 0.3)',
+                  zIndex: 10
+                }}
+              />
+            )}
+          </div>
+          <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gray-700 text-white">
@@ -1637,30 +1692,7 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n00TanksData).map((tank) => {
-                    // No scaling needed as the coordinates are already for the target size
-                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N00");
-                    return (
-                      <div
-                        key={tank.id}
-                        className="absolute"
-                        style={{
-                          top: `${position.top}px`,
-                          left: `${position.left}px`,
-                        }}
-                      >
-                        <div
-                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
-                          style={{
-                            width: `${tank.coordinates.width}px`,
-                            height: `${tank.coordinates.height}px`,
-                          }}
-                          onClick={() => handleTankClick(tank.id)}
-                        ></div>
-                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                      </div>
-                    );
-                  })}
+                  {renderTankBoxes(n00TanksData)}
                 </div>
               </div>
             )}
@@ -1677,30 +1709,7 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n10TanksData).map((tank) => {
-                    // No scaling needed as the coordinates are already for the target size
-                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N10");
-                    return (
-                      <div
-                        key={tank.id}
-                        className="absolute"
-                        style={{
-                          top: `${position.top}px`,
-                          left: `${position.left}px`,
-                        }}
-                      >
-                        <div
-                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
-                          style={{
-                            width: `${tank.coordinates.width}px`,
-                            height: `${tank.coordinates.height}px`,
-                          }}
-                          onClick={() => handleTankClick(tank.id)}
-                        ></div>
-                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                      </div>
-                    );
-                  })}
+                  {renderTankBoxes(n10TanksData)}
                 </div>
               </div>
             )}
@@ -1717,30 +1726,7 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n20TanksData).map((tank) => {
-                    // No scaling needed as the coordinates are already for the target size
-                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N20");
-                    return (
-                      <div
-                        key={tank.id}
-                        className="absolute"
-                        style={{
-                          top: `${position.top}px`,
-                          left: `${position.left}px`,
-                        }}
-                      >
-                        <div
-                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
-                          style={{
-                            width: `${tank.coordinates.width}px`,
-                            height: `${tank.coordinates.height}px`,
-                          }}
-                          onClick={() => handleTankClick(tank.id)}
-                        ></div>
-                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                      </div>
-                    );
-                  })}
+                  {renderTankBoxes(n20TanksData)}
                 </div>
               </div>
             )}
@@ -1757,30 +1743,7 @@ export default function ConstructionTracker() {
                     style={{ maxWidth: "none" }}
                   />
                   {/* Render clickable boxes for each tank */}
-                  {Object.values(n30TanksData).map((tank) => {
-                    // No scaling needed as the coordinates are already for the target size
-                    const position = getScaledPosition(tank.coordinates.top, tank.coordinates.left, "N30");
-                    return (
-                      <div
-                        key={tank.id}
-                        className="absolute"
-                        style={{
-                          top: `${position.top}px`,
-                          left: `${position.left}px`,
-                        }}
-                      >
-                        <div
-                          className={`${getTankColor(tank)} cursor-pointer hover:opacity-80 transition-opacity border border-black`}
-                          style={{
-                            width: `${tank.coordinates.width}px`,
-                            height: `${tank.coordinates.height}px`,
-                          }}
-                          onClick={() => handleTankClick(tank.id)}
-                        ></div>
-                        <div className="text-[8px] font-bold mt-1 text-black whitespace-nowrap">{tank.type}</div>
-                      </div>
-                    );
-                  })}
+                  {renderTankBoxes(n30TanksData)}
                 </div>
               </div>
             )}
