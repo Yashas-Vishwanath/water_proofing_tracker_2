@@ -123,7 +123,17 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     tankId === "PBF-S1-03" || 
     tankId === "PBF-S1-04" || 
     tankId === "PBF-S1-05" || 
-    tankId === "PBF-S1-08"
+    tankId === "PBF-S1-08" ||
+    // Chiller room tanks (all are pump pits)
+    tankId === "CHILLER-ROOM-INSIDE" || 
+    tankId === "CHILLER-ROOM-OUTSIDE" ||
+    tankId === "EB16-STE-088" ||
+    tankId === "EB16-STE-089-CR" ||
+    // Tank types
+    (tankType && (
+      tankType.includes("CHILLER ROOM") ||
+      tankType === "CHILLER ROOM"
+    ))
   );
   
   // Special case for EB16-STE-089 Tank-01 (the large tank with dwall stages)
@@ -292,7 +302,15 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
   }
 
   // For Chiller Room tanks
-  if (tankType && tankType.includes("Chiller Room")) {
+  if (
+    (tankType && tankType.includes("Chiller Room")) ||
+    (tankId && (
+      tankId === "CHILLER-ROOM-INSIDE" ||
+      tankId === "CHILLER-ROOM-OUTSIDE" ||
+      tankId === "EB16-STE-088" ||
+      tankId === "EB16-STE-089-CR"
+    ))
+  ) {
     const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
@@ -301,10 +319,8 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Inspection Stage 2"
     ] as ProgressStage[];
     
-    // Add Ladder Installation if this is a pump pit
-    if (isPumpPit) {
-      stages.push("Ladder Installation");
-    }
+    // Add Ladder Installation if this is a pump pit - these are all considered pump pits now
+    stages.push("Ladder Installation");
     
     return stages;
   }

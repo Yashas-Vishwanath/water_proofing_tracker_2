@@ -446,7 +446,17 @@ export default function ConstructionTracker() {
       tank.id === "PBF-S1-03" || 
       tank.id === "PBF-S1-04" || 
       tank.id === "PBF-S1-05" || 
-      tank.id === "PBF-S1-08"
+      tank.id === "PBF-S1-08" ||
+      // Chiller room tanks (all are pump pits)
+      tank.id === "CHILLER-ROOM-INSIDE" || 
+      tank.id === "CHILLER-ROOM-OUTSIDE" ||
+      tank.id === "EB16-STE-088" ||
+      tank.id === "EB16-STE-089-CR" ||
+      // Check by type
+      (tank.type && (
+        tank.type.includes("CHILLER ROOM") ||
+        tank.type === "CHILLER ROOM"
+      ))
     );
 
     // Special case for EB16-STE-089 tanks
@@ -821,7 +831,17 @@ export default function ConstructionTracker() {
       selectedTank.id === "PBF-S1-03" || 
       selectedTank.id === "PBF-S1-04" || 
       selectedTank.id === "PBF-S1-05" || 
-      selectedTank.id === "PBF-S1-08"
+      selectedTank.id === "PBF-S1-08" ||
+      // Chiller room tanks (all are pump pits)
+      selectedTank.id === "CHILLER-ROOM-INSIDE" || 
+      selectedTank.id === "CHILLER-ROOM-OUTSIDE" ||
+      selectedTank.id === "EB16-STE-088" ||
+      selectedTank.id === "EB16-STE-089-CR" ||
+      // Check by type
+      (selectedTank.type && (
+        selectedTank.type.includes("CHILLER ROOM") ||
+        selectedTank.type === "CHILLER ROOM"
+      ))
     );
 
     // Special handling for Repair and Cleaning - always set next stage to In Progress
@@ -905,7 +925,7 @@ export default function ConstructionTracker() {
         return;
       }
     }
-
+    
     // Special handling for Inspection Stage 3 in pump pits - set Ladder Installation to In Progress
     if (stage === "Inspection Stage 3" && isPumpPit) {
       const updatedTank = { ...selectedTank } as ExtendedWaterTank;
@@ -977,6 +997,168 @@ export default function ConstructionTracker() {
         
         // Update the tank with new progress
         updatedTank.progress = updatedProgress;
+        updatedTank.currentStage = "Ladder Installation";
+        
+        // Update the selected tank state
+        setSelectedTank(updatedTank);
+        
+        // Update the tank data based on which level it belongs to
+        updateTankData(updatedTank);
+        return;
+      }
+    }
+    
+    // Special handling for Inspection Stage 2 in pump pits without Inspection Stage 3 - set Ladder Installation to In Progress
+    if (stage === "Inspection Stage 2" && isPumpPit) {
+      // First check if this tank has Inspection Stage 3
+      const hasInspectionStage3 = selectedTank.progress.some(p => p.stage === "Inspection Stage 3") ||
+                                 (selectedTank.isGrouped && selectedTank.subTanks && 
+                                  selectedTank.subTanks[selectedTank.currentSubTankIndex || 0]?.progress.some(p => p.stage === "Inspection Stage 3"));
+      
+      // Only apply special handling if it doesn't have Inspection Stage 3
+      if (!hasInspectionStage3) {
+        const updatedTank = { ...selectedTank } as ExtendedWaterTank;
+        
+        // For grouped tanks with sub-tanks
+        if (updatedTank.isGrouped && updatedTank.subTanks) {
+          const subTankIndex = updatedTank.currentSubTankIndex !== undefined ? updatedTank.currentSubTankIndex : 0;
+          const subTank = updatedTank.subTanks[subTankIndex];
+          
+          if (subTank) {
+            // Create copies to avoid direct state mutation
+            const updatedSubTanks = [...updatedTank.subTanks];
+            const updatedSubTank = { ...subTank };
+            const updatedProgress = [...updatedSubTank.progress];
+            
+            // First mark Inspection Stage 2 as Completed
+            const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 2");
+            if (inspectionIndex !== -1) {
+              updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "Completed" };
+            }
+            
+            // Then mark Ladder Installation as In Progress
+            const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+            if (ladderIndex !== -1) {
+              updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "In Progress" };
+            } else {
+              // If not found, add it
+              updatedProgress.push({ stage: "Ladder Installation", status: "In Progress" });
+            }
+            
+            // Update the sub-tank with new progress
+            updatedSubTank.progress = updatedProgress;
+            updatedSubTank.currentStage = "Ladder Installation";
+            
+            // Update the sub-tanks array
+            updatedSubTanks[subTankIndex] = updatedSubTank;
+            
+            // Update the parent tank
+            updatedTank.subTanks = updatedSubTanks;
+            updatedTank.currentStage = "Ladder Installation";
+            
+            // Update the selected tank state
+            setSelectedTank(updatedTank);
+            
+            // Update the tank data based on which level it belongs to
+            updateTankData(updatedTank);
+            return;
+          }
+        }
+        // For regular tanks (non-grouped)
+        else {
+          // Create a copy of the progress array
+          const updatedProgress = [...updatedTank.progress];
+          
+          // First mark Inspection Stage 2 as Completed
+          const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 2");
+          if (inspectionIndex !== -1) {
+            updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "Completed" };
+          }
+          
+          // Then mark Ladder Installation as In Progress
+          const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+          if (ladderIndex !== -1) {
+            updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "In Progress" };
+          } else {
+            // If not found, add it
+            updatedProgress.push({ stage: "Ladder Installation", status: "In Progress" });
+          }
+          
+          // Update the tank with new progress
+          updatedTank.progress = updatedProgress;
+          updatedTank.currentStage = "Ladder Installation";
+          
+          // Update the selected tank state
+          setSelectedTank(updatedTank);
+          
+          // Update the tank data based on which level it belongs to
+          updateTankData(updatedTank);
+          return;
+        }
+      }
+    }
+
+    // Special handling for Ladder Installation - just mark it as completed
+    if (stage === "Ladder Installation") {
+      const updatedTank = { ...selectedTank } as ExtendedWaterTank;
+      
+      // For grouped tanks with sub-tanks
+      if (updatedTank.isGrouped && updatedTank.subTanks) {
+        const subTankIndex = updatedTank.currentSubTankIndex !== undefined ? updatedTank.currentSubTankIndex : 0;
+        const subTank = updatedTank.subTanks[subTankIndex];
+        
+        if (subTank) {
+          // Create copies to avoid direct state mutation
+          const updatedSubTanks = [...updatedTank.subTanks];
+          const updatedSubTank = { ...subTank };
+          const updatedProgress = [...updatedSubTank.progress];
+          
+          // Mark Ladder Installation as Completed
+          const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+          if (ladderIndex !== -1) {
+            updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "Completed" };
+          } else {
+            // If not found, add it as completed
+            updatedProgress.push({ stage: "Ladder Installation", status: "Completed" });
+          }
+          
+          // Update the sub-tank with new progress
+          updatedSubTank.progress = updatedProgress;
+          // Keep current stage as Ladder Installation
+          updatedSubTank.currentStage = "Ladder Installation";
+          
+          // Update the sub-tanks array
+          updatedSubTanks[subTankIndex] = updatedSubTank;
+          
+          // Update the parent tank
+          updatedTank.subTanks = updatedSubTanks;
+          updatedTank.currentStage = "Ladder Installation";
+          
+          // Update the selected tank state
+          setSelectedTank(updatedTank);
+          
+          // Update the tank data based on which level it belongs to
+          updateTankData(updatedTank);
+          return;
+        }
+      }
+      // For regular tanks (non-grouped)
+      else {
+        // Create a copy of the progress array
+        const updatedProgress = [...updatedTank.progress];
+        
+        // Mark Ladder Installation as Completed
+        const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+        if (ladderIndex !== -1) {
+          updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "Completed" };
+        } else {
+          // If not found, add it as completed
+          updatedProgress.push({ stage: "Ladder Installation", status: "Completed" });
+        }
+        
+        // Update the tank with new progress
+        updatedTank.progress = updatedProgress;
+        // Keep current stage as Ladder Installation
         updatedTank.currentStage = "Ladder Installation";
         
         // Update the selected tank state
