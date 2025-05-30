@@ -9,9 +9,21 @@ import {
  * Determines the color of a tank based on its progress status
  */
 export const getTankColor = (tank: WaterTank) => {
+  // Helper function to check if a tank has completed all required stages except Ladder Installation
+  const hasCompletedAllRequiredStages = (stages: ProgressStage[], progress: StageProgress[]) => {
+    // Get all applicable stages except Ladder Installation
+    const requiredStages = stages.filter(stage => stage !== "Ladder Installation");
+    
+    // Check if all required stages are completed
+    return requiredStages.every(stage => {
+      const stageProgress = progress.find(p => p.stage === stage);
+      return stageProgress?.status === "Completed";
+    });
+  };
+  
   // For grouped tanks with sub-tanks
   if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
-    // 1. Check if ALL sub-tanks are completed - this is the highest priority
+    // 1. Check if ALL sub-tanks have completed all required stages except Ladder Installation
     const allSubTanksCompleted = tank.subTanks.every(subTank => {
       // Get the applicable stages for this sub-tank
       const applicableStages = getApplicableStages({
@@ -20,11 +32,8 @@ export const getTankColor = (tank: WaterTank) => {
         parentId: tank.id
       });
       
-      // Check if all applicable stages are completed
-      return applicableStages.every(stage => {
-        const stageProgress = subTank.progress.find(p => p.stage === stage);
-        return stageProgress?.status === "Completed";
-      });
+      // Check if all required stages are completed
+      return hasCompletedAllRequiredStages(applicableStages, subTank.progress);
     });
     
     if (allSubTanksCompleted) {
@@ -52,15 +61,10 @@ export const getTankColor = (tank: WaterTank) => {
   } 
   // For regular tanks (non-grouped)
   else {
-    // 1. Check if this tank is fully completed
-    // Get applicable stages for this tank
+    // 1. Check if this tank has completed all required stages except Ladder Installation
     const applicableStages = getApplicableStages(tank);
-    const allStagesCompleted = applicableStages.every(stage => {
-      const stageProgress = tank.progress.find(p => p.stage === stage);
-      return stageProgress?.status === "Completed";
-    });
     
-    if (allStagesCompleted) {
+    if (hasCompletedAllRequiredStages(applicableStages, tank.progress)) {
       return "bg-green-600"; // Green for completed tanks
     }
     
@@ -92,6 +96,36 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
   const tankName = tank.name;
   const tankType = tank.type;
   
+  // Check if this is a pump pit by ID
+  const isPumpPit = tankId && (
+    // N00 pump pits
+    tankId === "PBF-S3-01" || 
+    tankId === "PBF-S3-02" || 
+    tankId === "PBF-S3-03" || 
+    tankId === "PBF-S3-04" || 
+    tankId === "PBP-S3-GT" || 
+    tankId === "S3-PBP-1G+CP" ||
+    // N10 pump pits 
+    tankId === "PBF-S2-01" || 
+    tankId === "PBF-S2-03" || 
+    tankId === "PBF-S2-11" || 
+    tankId === "PBF-S2-12" || 
+    tankId === "PBF-S2-13" || 
+    tankId === "S2-PB-04" || 
+    tankId === "S2-PB-05" || 
+    tankId === "S2-PB-06" || 
+    tankId === "S2-PB-07" || 
+    tankId === "S2-PB-15" || 
+    tankId === "PBP-S2-01" || 
+    tankId === "FEC-PB-08" ||
+    // N20 pump pits
+    tankId === "PBF-S1-02" || 
+    tankId === "PBF-S1-03" || 
+    tankId === "PBF-S1-04" || 
+    tankId === "PBF-S1-05" || 
+    tankId === "PBF-S1-08"
+  );
+  
   // Special case for EB16-STE-089 Tank-01 (the large tank with dwall stages)
   // We need to detect if this is the first sub-tank (index 0) of EB16-STE-089
   if (
@@ -111,7 +145,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
      ((tankId && (tankId.includes("TANK-01") || tankId.includes("01"))) || 
       (tank.index === 0)))
   ) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Dwall anchorage removal",
@@ -123,6 +157,13 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Waterproofing of floor",
       "Inspection Stage 3"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
   
   // Other EB16-STE-089 tanks (Tank-02, Tank-03) - no dwall stages
@@ -130,7 +171,7 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     (tankId && tankId.includes("EB16-STE-089")) ||
     (isSubTank && parentId && parentId.includes("EB16-STE-089"))
   ) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
@@ -139,6 +180,13 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
       "Waterproofing of floor",
       "Inspection Stage 3"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
   
   // For Sanitary Water tanks (EB1-Interior)
@@ -147,13 +195,20 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     (tankId && tankId.includes("EB1") && tankId.includes("Interior")) ||
     (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Interior"))
   ) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // For Fire Water tanks (EB1-Exterior)
@@ -162,13 +217,20 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     (tankId && tankId.includes("EB1") && tankId.includes("Exterior")) ||
     (isSubTank && parentId && parentId.includes("EB1") && parentId.includes("Exterior"))
   ) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // For Water deposit tanks (EB9)
@@ -177,61 +239,96 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     (tankId && tankId.includes("EB9")) ||
     (isSubTank && parentId && parentId.includes("EB9"))
   ) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // For Rain Water - Pump tanks
   if (tankType && tankType.includes("Rain Water") && tankType.includes("Pump")) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
   
   // For Rain Water - Valve tanks
   if (tankType && tankType.includes("Rain Water") && tankType.includes("Valve")) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // For Chiller Room tanks
   if (tankType && tankType.includes("Chiller Room")) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // For Gardenrona tanks
   if (tankType && (tankType.includes("Gardenrona") || tankType.includes("Gardenroba"))) {
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Inspection Stage 1",
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   }
 
   // Standard Sewage Water tanks - with pump pits
-  return [
+  const stages = [
     "Formwork Removal",
     "Repair and Cleaning",
     "Pump Anchors",
@@ -240,6 +337,13 @@ export const getApplicableStages = (tank: any): ProgressStage[] => {
     "Waterproofing",
     "Inspection Stage 2"
   ] as ProgressStage[];
+  
+  // Add Ladder Installation if this is a pump pit
+  if (isPumpPit) {
+    stages.push("Ladder Installation");
+  }
+  
+  return stages;
 };
 
 /**
@@ -278,6 +382,18 @@ export const getTankStageStatus = (tank: any, stageName: string) => {
  * Checks if a tank is fully completed
  */
 export const isFullyCompleted = (tank: WaterTank) => {
+  // Helper function to check if all required stages are completed (except Ladder Installation)
+  const areRequiredStagesCompleted = (stages: ProgressStage[], progress: StageProgress[]) => {
+    // Get all applicable stages except Ladder Installation
+    const requiredStages = stages.filter(stage => stage !== "Ladder Installation");
+    
+    // Check if all required stages are completed
+    return requiredStages.every(stage => {
+      const stageProgress = progress.find(p => p.stage === stage);
+      return stageProgress?.status === "Completed";
+    });
+  };
+
   if (tank.isGrouped && tank.subTanks && tank.subTanks.length > 0) {
     return tank.subTanks.every(subTank => {
       const applicableStages = getApplicableStages({
@@ -285,16 +401,11 @@ export const isFullyCompleted = (tank: WaterTank) => {
         isSubTank: true,
         parentId: tank.id
       });
-      return applicableStages.every(stage => {
-        const stageProgress = subTank.progress.find(p => p.stage === stage);
-        return stageProgress?.status === "Completed";
-      });
+      
+      return areRequiredStagesCompleted(applicableStages, subTank.progress);
     });
   }
   
   const applicableStages = getApplicableStages(tank);
-  return applicableStages.every(stage => {
-    const stageProgress = tank.progress.find(p => p.stage === stage);
-    return stageProgress?.status === "Completed";
-  });
+  return areRequiredStagesCompleted(applicableStages, tank.progress);
 }; 

@@ -419,11 +419,41 @@ export default function ConstructionTracker() {
   
   // Helper function to get stages that are applicable for a given tank type
   const getApplicableStages = (tank: any): ProgressStage[] => {
+    // Check if this is a pump pit by ID
+    const isPumpPit = tank.id && (
+      // N00 pump pits
+      tank.id === "PBF-S3-01" || 
+      tank.id === "PBF-S3-02" || 
+      tank.id === "PBF-S3-03" || 
+      tank.id === "PBF-S3-04" || 
+      tank.id === "PBP-S3-GT" || 
+      tank.id === "S3-PBP-1G+CP" ||
+      // N10 pump pits 
+      tank.id === "PBF-S2-01" || 
+      tank.id === "PBF-S2-03" || 
+      tank.id === "PBF-S2-11" || 
+      tank.id === "PBF-S2-12" || 
+      tank.id === "PBF-S2-13" || 
+      tank.id === "S2-PB-04" || 
+      tank.id === "S2-PB-05" || 
+      tank.id === "S2-PB-06" || 
+      tank.id === "S2-PB-07" || 
+      tank.id === "S2-PB-15" || 
+      tank.id === "PBP-S2-01" || 
+      tank.id === "FEC-PB-08" ||
+      // N20 pump pits
+      tank.id === "PBF-S1-02" || 
+      tank.id === "PBF-S1-03" || 
+      tank.id === "PBF-S1-04" || 
+      tank.id === "PBF-S1-05" || 
+      tank.id === "PBF-S1-08"
+    );
+
     // Special case for EB16-STE-089 tanks
     if (tank.id === "EB16-STE-089" || (tank.isSubTank && tank.parentId === "EB16-STE-089")) {
       // For LARGE TANK-01, include all special stages
       if (tank.isSubTank && tank.id === "EB16-STE-089-TANK-01") {
-        return [
+        const stages = [
           "Formwork Removal",
           "Repair and Cleaning",
           "Dwall anchorage removal",
@@ -435,10 +465,17 @@ export default function ConstructionTracker() {
           "Waterproofing of floor",
           "Inspection Stage 3"
         ] as ProgressStage[];
+        
+        // Add Ladder Installation if this is a pump pit
+        if (isPumpPit) {
+          stages.push("Ladder Installation");
+        }
+        
+        return stages;
       }
       
       // For other EB16-STE-089 tanks (parent tank and other sub-tanks)
-      return [
+      const stages = [
         "Formwork Removal",
         "Repair and Cleaning",
         "Inspection Stage 1",
@@ -447,11 +484,18 @@ export default function ConstructionTracker() {
         "Waterproofing of floor",
         "Inspection Stage 3"
       ] as ProgressStage[];
+      
+      // Add Ladder Installation if this is a pump pit
+      if (isPumpPit) {
+        stages.push("Ladder Installation");
+      }
+      
+      return stages;
     }
     
     // Special case for EB1-EXTERIOR tanks and its sub-tanks
     if (tank.id === "EB1-EXTERIOR" || (tank.isSubTank && tank.parentId === "EB1-EXTERIOR")) {
-      return [
+      const stages = [
         "Formwork Removal",
         "Repair and Cleaning",
         "Pump Anchors",
@@ -460,10 +504,17 @@ export default function ConstructionTracker() {
         "Waterproofing",
         "Inspection Stage 2"
       ] as ProgressStage[];
+      
+      // Add Ladder Installation if this is a pump pit
+      if (isPumpPit) {
+        stages.push("Ladder Installation");
+      }
+      
+      return stages;
     }
     
     // For all other regular tanks
-    return [
+    const stages = [
       "Formwork Removal",
       "Repair and Cleaning",
       "Pump Anchors",
@@ -472,6 +523,13 @@ export default function ConstructionTracker() {
       "Waterproofing",
       "Inspection Stage 2"
     ] as ProgressStage[];
+    
+    // Add Ladder Installation if this is a pump pit
+    if (isPumpPit) {
+      stages.push("Ladder Installation");
+    }
+    
+    return stages;
   };
 
   // Helper function to get stage status for a tank (handle both regular and custom stage configurations)
@@ -510,7 +568,7 @@ export default function ConstructionTracker() {
     const allTanks: any[] = getAllTanks();
 
     let csvContent =
-      "Level,Type of Tank,Parent Tank,ID,Formwork Removal,Repair and Cleaning,Dwall Anchorage Removal,Dwall Anchorage Waterproofing,Filling Dwall openings,Pump Anchors,Slope,Inspection Stage 1,Waterproofing Walls and Floor,Waterproofing Only Walls,Inspection Stage 2,Waterproofing Only Floor,Inspection Stage 3\n"
+      "Level,Type of Tank,Parent Tank,ID,Formwork Removal,Repair and Cleaning,Dwall Anchorage Removal,Dwall Anchorage Waterproofing,Filling Dwall openings,Pump Anchors,Slope,Inspection Stage 1,Waterproofing Walls and Floor,Waterproofing Only Walls,Inspection Stage 2,Waterproofing Only Floor,Inspection Stage 3,Ladder Installation\n"
 
     allTanks.forEach((tank: any) => {
       const tankId = tank.id;
@@ -530,8 +588,9 @@ export default function ConstructionTracker() {
       const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
       const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
       const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
+      const ladderInstallation = getTankStageStatus(tank, "Ladder Installation");
 
-      csvContent += `${tank.level},${tank.type},${parentInfo},${tankId},${formwork.status},${repair.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${pump.status},${slope.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status}\n`
+      csvContent += `${tank.level},${tank.type},${parentInfo},${tankId},${formwork.status},${repair.status},${dwallRemoval.status},${dwallWaterproofing.status},${groutOpenings.status},${pump.status},${slope.status},${inspection1.status},${waterproofing.status},${waterproofingWalls.status},${inspection2.status},${waterproofingFloor.status},${inspection3.status},${ladderInstallation.status}\n`
     });
 
     return csvContent;
@@ -562,13 +621,13 @@ export default function ConstructionTracker() {
 
   // Function to get tanks ready for inspection
   const getTanksReadyForInspection = () => {
-    // Helper function to check if all applicable stages are completed
-    const isFullyCompleted = (tank: WaterTank) => {
-      // Get the applicable stages for this tank
-      const applicableStages = getApplicableStages(tank);
+    // Helper function to check if all applicable stages except Ladder Installation are completed
+    const areRequiredStagesCompleted = (tank: { progress: StageProgress[] }, applicableStages: ProgressStage[]) => {
+      // Get all applicable stages except Ladder Installation
+      const requiredStages = applicableStages.filter(stage => stage !== "Ladder Installation");
       
-      // Check if all applicable stages are completed
-      return applicableStages.every(stage => {
+      // Check if all required stages are completed
+      return requiredStages.every(stage => {
         const stageProgress = tank.progress.find(p => p.stage === stage);
         return stageProgress?.status === "Completed";
       });
@@ -584,14 +643,12 @@ export default function ConstructionTracker() {
             parentId: tank.id
           });
           
-          return applicableStages.every(stage => {
-            const stageProgress = subTank.progress.find(p => p.stage === stage);
-            return stageProgress?.status === "Completed";
-          });
+          return areRequiredStagesCompleted(subTank, applicableStages);
         });
       }
       
-      return isFullyCompleted(tank);
+      const applicableStages = getApplicableStages(tank);
+      return areRequiredStagesCompleted(tank, applicableStages);
     };
 
     // Helper to check if a tank is in an inspection stage (either by currentStage or progress status)
@@ -737,6 +794,36 @@ export default function ConstructionTracker() {
   const markTaskAsCompleted = (stage: ProgressStage) => {
     if (!selectedTank) return;
 
+    // Check if this is a pump pit
+    const isPumpPit = selectedTank.id && (
+      // N00 pump pits
+      selectedTank.id === "PBF-S3-01" || 
+      selectedTank.id === "PBF-S3-02" || 
+      selectedTank.id === "PBF-S3-03" || 
+      selectedTank.id === "PBF-S3-04" || 
+      selectedTank.id === "PBP-S3-GT" || 
+      selectedTank.id === "S3-PBP-1G+CP" ||
+      // N10 pump pits 
+      selectedTank.id === "PBF-S2-01" || 
+      selectedTank.id === "PBF-S2-03" || 
+      selectedTank.id === "PBF-S2-11" || 
+      selectedTank.id === "PBF-S2-12" || 
+      selectedTank.id === "PBF-S2-13" || 
+      selectedTank.id === "S2-PB-04" || 
+      selectedTank.id === "S2-PB-05" || 
+      selectedTank.id === "S2-PB-06" || 
+      selectedTank.id === "S2-PB-07" || 
+      selectedTank.id === "S2-PB-15" || 
+      selectedTank.id === "PBP-S2-01" || 
+      selectedTank.id === "FEC-PB-08" ||
+      // N20 pump pits
+      selectedTank.id === "PBF-S1-02" || 
+      selectedTank.id === "PBF-S1-03" || 
+      selectedTank.id === "PBF-S1-04" || 
+      selectedTank.id === "PBF-S1-05" || 
+      selectedTank.id === "PBF-S1-08"
+    );
+
     // Special handling for Repair and Cleaning - always set next stage to In Progress
     if (stage === "Repair and Cleaning") {
       const updatedTank = { ...selectedTank } as ExtendedWaterTank;
@@ -809,6 +896,88 @@ export default function ConstructionTracker() {
         // Update the tank with new progress
         updatedTank.progress = updatedProgress;
         updatedTank.currentStage = "Inspection Stage 1";
+        
+        // Update the selected tank state
+        setSelectedTank(updatedTank);
+        
+        // Update the tank data based on which level it belongs to
+        updateTankData(updatedTank);
+        return;
+      }
+    }
+
+    // Special handling for Inspection Stage 3 in pump pits - set Ladder Installation to In Progress
+    if (stage === "Inspection Stage 3" && isPumpPit) {
+      const updatedTank = { ...selectedTank } as ExtendedWaterTank;
+      
+      // For grouped tanks with sub-tanks
+      if (updatedTank.isGrouped && updatedTank.subTanks) {
+        const subTankIndex = updatedTank.currentSubTankIndex !== undefined ? updatedTank.currentSubTankIndex : 0;
+        const subTank = updatedTank.subTanks[subTankIndex];
+        
+        if (subTank) {
+          // Create copies to avoid direct state mutation
+          const updatedSubTanks = [...updatedTank.subTanks];
+          const updatedSubTank = { ...subTank };
+          const updatedProgress = [...updatedSubTank.progress];
+          
+          // First mark Inspection Stage 3 as Completed
+          const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 3");
+          if (inspectionIndex !== -1) {
+            updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "Completed" };
+          }
+          
+          // Then mark Ladder Installation as In Progress
+          const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+          if (ladderIndex !== -1) {
+            updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "In Progress" };
+          } else {
+            // If not found, add it
+            updatedProgress.push({ stage: "Ladder Installation", status: "In Progress" });
+          }
+          
+          // Update the sub-tank with new progress
+          updatedSubTank.progress = updatedProgress;
+          updatedSubTank.currentStage = "Ladder Installation";
+          
+          // Update the sub-tanks array
+          updatedSubTanks[subTankIndex] = updatedSubTank;
+          
+          // Update the parent tank
+          updatedTank.subTanks = updatedSubTanks;
+          updatedTank.currentStage = "Ladder Installation";
+          
+          // Update the selected tank state
+          setSelectedTank(updatedTank);
+          
+          // Update the tank data based on which level it belongs to
+          updateTankData(updatedTank);
+          return;
+        }
+      }
+      // For regular tanks (non-grouped)
+      else {
+        // Create a copy of the progress array
+        const updatedProgress = [...updatedTank.progress];
+        
+        // First mark Inspection Stage 3 as Completed
+        const inspectionIndex = updatedProgress.findIndex(p => p.stage === "Inspection Stage 3");
+        if (inspectionIndex !== -1) {
+          updatedProgress[inspectionIndex] = { ...updatedProgress[inspectionIndex], status: "Completed" };
+        }
+        
+        // Then mark Ladder Installation as In Progress
+        const ladderIndex = updatedProgress.findIndex(p => p.stage === "Ladder Installation");
+        if (ladderIndex !== -1) {
+          updatedProgress[ladderIndex] = { ...updatedProgress[ladderIndex], status: "In Progress" };
+        } else {
+          // If not found, add it
+          updatedProgress.push({ stage: "Ladder Installation", status: "In Progress" });
+        }
+        
+        // Update the tank with new progress
+        updatedTank.progress = updatedProgress;
+        updatedTank.currentStage = "Ladder Installation";
         
         // Update the selected tank state
         setSelectedTank(updatedTank);
@@ -1524,6 +1693,7 @@ export default function ConstructionTracker() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 2</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waterproofing Only Floor</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection Stage 3</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ladder Installation</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
@@ -1545,6 +1715,7 @@ export default function ConstructionTracker() {
                   const inspection2 = getTankStageStatus(tank, "Inspection Stage 2");
                   const waterproofingFloor = getTankStageStatus(tank, "Waterproofing of floor");
                   const inspection3 = getTankStageStatus(tank, "Inspection Stage 3");
+                  const ladderInstallation = getTankStageStatus(tank, "Ladder Installation");
                   
                   // Add colored cell styles based on status
                   const getCellClass = (result: { status: string, applicable: boolean }) => {
@@ -1577,6 +1748,7 @@ export default function ConstructionTracker() {
                       <td className={getCellClass(inspection2)}>{inspection2.status}</td>
                       <td className={getCellClass(waterproofingFloor)}>{waterproofingFloor.status}</td>
                       <td className={getCellClass(inspection3)}>{inspection3.status}</td>
+                      <td className={getCellClass(ladderInstallation)}>{ladderInstallation.status}</td>
                     </tr>
                   )
                 })}

@@ -13,6 +13,7 @@ export type ProgressStage =
   | "Dwall anchorage removal"
   | "Dwall anchorage waterproofing"
   | "Grout openings in wall"
+  | "Ladder Installation"
 
 export type ProgressStatus = "Not Started" | "In Progress" | "Completed"
 
@@ -72,6 +73,7 @@ export const allProgressStages: ProgressStage[] = [
   "Inspection Stage 2",
   "Waterproofing of floor",
   "Inspection Stage 3",
+  "Ladder Installation",
 ]
 
 // Update the tank data for N00 level with correct tank IDs and positions based on the new image
